@@ -1,0 +1,96 @@
+name: CI
+
+# Chronoscope's host-side engine is pure Python 3.11+ standard library, so the
+# entire determinism workbench is reproducible in public CI with no QNX licence.
+# The QNX SDP 8.0 cross-build (qcc/mkifs) is documented in target/README.md and
+# statically checked by tests/test_target_contract.py; qcc is not available on
+# GitHub-hosted runners.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Python ${{ matrix.python-version }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ['3.11', '3.12', '3.13']
+        exclude:
+          # Keep the matrix fast: full OS coverage on 3.13, version coverage
+          # on Linux.
+          - os: macos-latest
+            python-version: '3.11'
+          - os: macos-latest
+            python-version: '3.12'
+          - os: windows-latest
+            python-version: '3.11'
+          - os: windows-latest
+            python-version: '3.12'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: .github/workflows/ci.yml
+
+      - name: Self-verification suite
+        run: python -m chronoscope verify
+
+      - name: Determinism regression gate (clean baseline must stay at 100/100)
+        run: python -m chronoscope audit models/hello-qnx.toml --strict
+
+      - name: Flagship scenario and verified fix
+        run: |
+          python -m chronoscope audit models/brake-by-wire.toml
+          python -m chronoscope fix models/brake-by-wire.toml --out fixed.toml --report proof.html
+          python -m chronoscope audit fixed.toml --strict
+
+      - name: QNX mkifs buildfile determinism checks
+        run: python -m chronoscope inspect target/images/chronoscope.build --model models/brake-by-wire.toml
+
+      - name: QNX artifact importers + model/target reconciliation
+        run: |
+          python -m chronoscope import examples/traces/traceprinter.txt --format traceprinter --audit
+          python -m chronoscope import examples/traces/slog2info.txt --format slog2 --audit
+          python -m chronoscope import examples/traces/chrono-stderr.txt --format slog2 --audit
+          python -m chronoscope import examples/traces/pidin.txt --format pidin
+          python -m chronoscope reconcile examples/traces/simulated-trace.json examples/traces/traceprinter.txt
+
+      - name: Generate all demo reports (must not raise)
+        run: python -m chronoscope demo --out-dir demo-ci
+
+      - name: Upload generated timing evidence
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.13'
+        uses: actions/upload-artifact@v4
+        with:
+          name: chronoscope-timing-evidence
+          path: |
+            proof.html
+            demo-ci/*.html
+          if-no-files-found: error
+
+  reproducibility:
+    name: Generated artifacts are deterministic
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Regenerate sample QNX artifacts and codelab
+        run: |
+          python examples/traces/generate.py
+          python codelab/build.py
+      - name: No uncommitted drift
+        run: git diff --exit-code -- examples/traces codelab/README.md docs/index.html

@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+build/
+dist/
+*.egg-info/
+
+# Local scratch / generated outputs that are not source.
+# Anchored to the repo root so they never hide shipped demo/proof.html.
+/tmp/
+/demo-ci/
+/fixed.toml
+/proof.html
+/my-ecu.toml
+.DS_Store
+
+# QNX SDP build products (sources are checked in, binaries are not)
+target/*.o
+target/*.a
+target/lib/*.o
+target/demo/chronoscope_demo
+target/resmgr/chronoscope_resmgr
+target/images/*.ifs

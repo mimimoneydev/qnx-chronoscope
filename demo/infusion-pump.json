@@ -1,0 +1,131 @@
+{
+  "verdict": "DETERMINISTIC",
+  "score": 100.0,
+  "kpis": {
+    "total_jobs": 13,
+    "completed_jobs": 13,
+    "deadline_misses": 0,
+    "miss_rate_pct": 0.0,
+    "worst_case_response_us": 1700.0,
+    "max_lateness_us": 0.0,
+    "max_jitter_us": 1000.0,
+    "cpu_utilization_pct": 41.67,
+    "priority_inversion_episodes": 0,
+    "max_priority_inversion_us": 0.0,
+    "message_driven_priority_boosts": 0,
+    "msg_send_transactions": 0,
+    "msg_reply_transactions": 0,
+    "rr_quantum_expiries": 0,
+    "sporadic_budget_drops": 0,
+    "aps_bankruptcies": 0,
+    "isr_count": 0,
+    "max_isr_to_ist_us": 0.0,
+    "horizon_us": 18000.0,
+    "cpus": 1,
+    "trace_source": "simulated"
+  },
+  "findings": [
+    {
+      "severity": "INFO",
+      "code": "DEADLINES_MET",
+      "title": "All modelled jobs meet their deadlines",
+      "detail": "13 jobs completed; worst-case response 1700 us, max jitter 1000 us.",
+      "evidence": "trace.jobs[]; chronoscope/audit.py:audit()",
+      "recommendation": "Validate against a real QNX 8.0 target with `chronoscope reconcile` before freezing WCET assumptions.",
+      "qnx_reference": "System Analysis Toolkit User's Guide"
+    }
+  ],
+  "per_thread": [
+    {
+      "thread": "alarm_monitor",
+      "priority": 55,
+      "jobs": 4,
+      "misses": 0,
+      "min_us": 300.0,
+      "mean_us": 300.0,
+      "wcet_us": 300.0,
+      "jitter_us": 0.0,
+      "cpu_us": 1200.0
+    },
+    {
+      "thread": "audit_writer",
+      "priority": 12,
+      "jobs": 3,
+      "misses": 0,
+      "min_us": 800.0,
+      "mean_us": 900.0,
+      "wcet_us": 1100.0,
+      "jitter_us": 300.0,
+      "cpu_us": 2100.0
+    },
+    {
+      "thread": "dose_controller",
+      "priority": 48,
+      "jobs": 6,
+      "misses": 0,
+      "min_us": 700.0,
+      "mean_us": 1100.0,
+      "wcet_us": 1700.0,
+      "jitter_us": 1000.0,
+      "cpu_us": 4200.0
+    }
+  ],
+  "inversions": [],
+  "partition_usage": [],
+  "timing_evidence": {
+    "purpose": "Structured timing evidence for an ISO 26262 / IEC 62304 / DO-178C style safety case. This is engineering evidence, NOT a certification artifact or a claim of compliance.",
+    "tool": "Chronoscope for QNX 8.0 (host-based determinism workbench)",
+    "qnx_version": "8.0",
+    "trace_source": "simulated",
+    "trace_tool": "Chronoscope simulator",
+    "scheduling_model": "QNX Neutrino: 256 priority levels, message-driven priority inheritance, SCHED_FIFO/RR/SPORADIC, adaptive partitioning",
+    "wcet_and_jitter_per_thread": [
+      {
+        "thread": "alarm_monitor",
+        "priority": 55,
+        "jobs": 4,
+        "misses": 0,
+        "min_us": 300.0,
+        "mean_us": 300.0,
+        "wcet_us": 300.0,
+        "jitter_us": 0.0,
+        "cpu_us": 1200.0
+      },
+      {
+        "thread": "audit_writer",
+        "priority": 12,
+        "jobs": 3,
+        "misses": 0,
+        "min_us": 800.0,
+        "mean_us": 900.0,
+        "wcet_us": 1100.0,
+        "jitter_us": 300.0,
+        "cpu_us": 2100.0
+      },
+      {
+        "thread": "dose_controller",
+        "priority": 48,
+        "jobs": 6,
+        "misses": 0,
+        "min_us": 700.0,
+        "mean_us": 1100.0,
+        "wcet_us": 1700.0,
+        "jitter_us": 1000.0,
+        "cpu_us": 4200.0
+      }
+    ],
+    "deadline_miss_count": 0,
+    "worst_case_response_us": 1700.0,
+    "max_priority_inversion_us": 0.0,
+    "max_isr_to_ist_us": 0.0,
+    "cpu_utilization_pct": 41.67,
+    "priority_assignment": {
+      "alarm_monitor": 55,
+      "audit_writer": 12,
+      "dose_controller": 48
+    },
+    "partition_budget_consumption": [],
+    "reproducibility": "Deterministic discrete-event replay; re-run `chronoscope simulate MODEL` to reproduce exactly."
+  },
+  "anomalies": []
+}

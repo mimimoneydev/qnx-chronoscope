@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="QNX 8.0 codelab: find and fix a priority inversion with Chronoscope.">
+<title>Find and fix a priority inversion on QNX 8.0 | QNX 8.0 Codelab</title>
+<style>
+:root{--bg:#0b0f14;--panel:#131920;--panel2:#171f28;--line:#26313d;
+--txt:#e6edf3;--muted:#8b98a5;--accent:#58a6ff;--ok:#3fb950;
+--warn:#d29922;--bad:#f85149;--purple:#bc8cff;}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--txt);
+font:15px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+code,pre{font:13px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+code{background:#1c2530;border:1px solid var(--line);border-radius:5px;
+padding:1px 5px;color:#a5d6ff;font-size:.9em}
+pre code{display:block;padding:0;background:none;border:0;color:var(--txt)}
+.layout{display:grid;grid-template-columns:268px minmax(0,1fr);gap:0;
+max-width:1400px;margin:0 auto}
+aside{position:sticky;top:0;height:100vh;overflow:auto;border-right:1px solid var(--line);
+background:#0d1218;padding:24px 18px}
+aside .brand{font-size:11px;letter-spacing:.22em;color:var(--accent);font-weight:800}
+aside h2{font-size:16px;line-height:1.35;margin:10px 0 4px}
+aside .meta{font-size:12px;color:var(--muted);margin-bottom:18px}
+.progress{height:6px;border-radius:6px;background:#1c2530;overflow:hidden;margin:8px 0 4px}
+.progress i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--ok));width:0}
+aside .pct{font-size:11px;color:var(--muted);margin-bottom:18px}
+nav a{display:flex;gap:9px;align-items:flex-start;padding:7px 9px;border-radius:8px;
+color:var(--muted);font-size:12.5px;line-height:1.4}
+nav a:hover{background:#18212b;color:var(--txt);text-decoration:none}
+nav a .n{color:var(--accent);font-weight:700;min-width:18px}
+nav a.done .n{color:var(--ok)}
+aside .foot{font-size:11px;color:var(--muted);margin-top:22px;border-top:1px solid var(--line);padding-top:14px}
+main{padding:0 40px 100px;min-width:0}
+header{padding:44px 0 26px;border-bottom:1px solid var(--line);margin-bottom:28px}
+.kicker{font-size:11px;letter-spacing:.25em;color:var(--accent);font-weight:800}
+h1{font-size:36px;line-height:1.15;letter-spacing:-1px;margin:12px 0 10px}
+header .sub{font-size:16px;color:var(--muted);max-width:820px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}
+.chip{border:1px solid var(--line);background:var(--panel);border-radius:999px;
+padding:5px 12px;font-size:12px;color:var(--muted)}
+.chip b{color:var(--txt)}
+section.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+padding:22px 24px;margin:0 0 16px}
+section.card>h2{font-size:20px;margin:0 0 14px;letter-spacing:-.3px}
+section.card li{margin:6px 0}
+.msg{border-left:3px solid var(--accent);background:#111922;border-radius:0 8px 8px 0;
+padding:12px 16px;margin:14px 0;color:var(--muted)}
+.msg b{color:var(--txt)}
+.msg.tip{border-color:var(--ok)}.msg.warn{border-color:var(--warn)}
+.step{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+margin:0 0 22px;overflow:hidden;scroll-margin-top:16px}
+.step>.hd{display:flex;align-items:center;gap:14px;padding:18px 24px;
+background:linear-gradient(90deg,#111c28,#131920);border-bottom:1px solid var(--line)}
+.step>.hd .num{width:34px;height:34px;flex:0 0 34px;border-radius:9px;
+background:#17304a;color:var(--accent);display:grid;place-items:center;font-weight:800}
+.step>.hd h2{font-size:20px;margin:0;letter-spacing:-.3px}
+.step>.hd .t{margin-left:auto;font-size:12px;color:var(--muted);white-space:nowrap}
+.step .body{padding:8px 24px 22px}
+.step p{margin:14px 0}
+.codebox{position:relative;margin:14px 0;border:1px solid var(--line);border-radius:10px;
+background:#0c1117;overflow:hidden}
+.codebox .cap{font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+color:var(--muted);padding:9px 14px;background:#111820;border-bottom:1px solid var(--line);
+display:flex;justify-content:space-between;align-items:center}
+.codebox pre{margin:0;padding:14px 16px;overflow:auto;color:#d6e2ee}
+.codebox.out pre{color:#9fe0b0}
+button.copy{border:1px solid var(--line);background:#18222c;color:var(--muted);
+border-radius:6px;font-size:11px;padding:3px 8px;cursor:pointer;letter-spacing:0;
+text-transform:none}
+button.copy:hover{color:var(--txt);border-color:var(--accent)}
+.checkpoint{display:flex;gap:10px;align-items:flex-start;background:#101a16;
+border:1px solid #244331;border-radius:9px;padding:12px 14px;margin:16px 0;font-size:13.5px}
+.checkpoint input{margin-top:4px;accent-color:var(--ok);width:16px;height:16px;cursor:pointer}
+.refs{margin-top:16px;font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:12px}
+.refs b{color:var(--txt)}
+details{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px 18px}
+summary{cursor:pointer;color:var(--accent);font-weight:600}
+details ol{margin:14px 0 0;padding-left:22px}details li{margin:9px 0}
+footer{border-top:1px solid var(--line);margin-top:36px;padding-top:18px;
+font-size:12px;color:var(--muted)}
+@media(max-width:900px){.layout{grid-template-columns:1fr}aside{position:static;height:auto;
+border-right:0;border-bottom:1px solid var(--line)}main{padding:0 18px 60px}h1{font-size:28px}}
+</style></head><body>
+<div class="layout">
+<aside>
+  <div class="brand">QNX 8.0 CODELAB</div>
+  <h2>Find and fix a priority inversion on QNX 8.0</h2>
+  <div class="meta">~40 minutes &middot; Intermediate<br>November 2026 (QNX Global Hackathon Submission Period)</div>
+  <div class="progress"><i id="pbar"></i></div>
+  <div class="pct" id="pct"></div>
+  <nav><a href="#step-1-setup" id="nav-1"><span class="n">01</span><span>Set up the workspace<br><small>2 min</small></span></a><a href="#step-2-model" id="nav-2"><span class="n">02</span><span>Describe a QNX 8.0 system in TOML<br><small>5 min</small></span></a><a href="#step-3-reproduce" id="nav-3"><span class="n">03</span><span>Reproduce and measure the defect<br><small>4 min</small></span></a><a href="#step-4-semantics" id="nav-4"><span class="n">04</span><span>Understand the QNX 8.0 semantics behind it<br><small>4 min</small></span></a><a href="#step-5-fix" id="nav-5"><span class="n">05</span><span>Derive and verify a minimal fix (Autopilot)<br><small>4 min</small></span></a><a href="#step-6-evidence" id="nav-6"><span class="n">06</span><span>Publish offline timing evidence<br><small>3 min</small></span></a><a href="#step-7-target" id="nav-7"><span class="n">07</span><span>Reproduce it on a real QNX 8.0 target<br><small>6 min</small></span></a><a href="#step-8-reconcile" id="nav-8"><span class="n">08</span><span>Import real traces and reconcile<br><small>4 min</small></span></a><a href="#step-9-buildfile" id="nav-9"><span class="n">09</span><span>Lint the boot image for determinism hazards<br><small>3 min</small></span></a><a href="#step-10-quiz" id="nav-10"><span class="n">10</span><span>Knowledge check<br><small>2 min</small></span></a><a href="#step-11-next" id="nav-11"><span class="n">11</span><span>Where to go next<br><small>2 min</small></span></a></nav>
+  <div class="foot">Chronoscope for QNX 8.0<br>
+    <a href="https://github.com/mimimoneydev/qnx-chronoscope">Repository</a> &middot;
+    <a href="https://github.com/mimimoneydev/qnx-chronoscope/blob/main/codelab/README.md">Markdown version</a><br>
+    MIT licensed. QNX is a trademark of BlackBerry Limited.</div>
+</aside>
+<main>
+<header>
+  <div class="kicker">QNX EVERYWHERE &middot; SDP 8.0 &middot; HANDS-ON CODELAB</div>
+  <h1>Find and fix a priority inversion on QNX 8.0</h1>
+  <div class="sub">A hands-on codelab: model a brake-by-wire ECU, prove its deadlines are unsafe, derive a verified QNX configuration fix, then reconcile against a real QNX 8.0 target trace.</div>
+  <div class="chips">
+    <span class="chip">Duration <b>~40 minutes</b></span>
+    <span class="chip">Level <b>Intermediate</b></span>
+    <span class="chip">Target <b>QNX 8.0 / QEMU / Raspberry Pi 5</b></span>
+    <span class="chip">Authored <b>November 2026</b></span>
+  </div>
+</header>
+
+<section class="card">
+  <h2>What you will learn</h2>
+  <ol><li>Describe a QNX Neutrino 8.0 real-time system declaratively (priorities, scheduling policies, channels, partitions, deadlines).</li><li>Reproduce an unbounded priority inversion caused by <code>_NTO_CHF_FIXED_PRIORITY</code> and read the timing evidence.</li><li>Explain QNX message-driven priority inheritance, <code>PROCMGR_AID_PRIORITY</code> and the <code>procnto -P</code> unprivileged priority ceiling.</li><li>Derive a minimal configuration fix that is <strong>counterfactually verified</strong> by re-simulation, not suggested by guesswork.</li><li>Capture <code>traceprinter</code> / <code>slog2info</code> / <code>pidin</code> output on QNX 8.0 (QEMU or Raspberry Pi 5) and reconcile it with the model.</li><li>Lint a <code>mkifs</code> buildfile for boot-time determinism hazards.</li></ol>
+  <div class="msg"><b>Why this matters:</b> on a hard real-time operating
+  system, "it usually finishes in 2 ms" is not an engineering statement. This
+  codelab produces a machine-checkable answer to <em>when</em> code runs, what
+  blocked it, and what happens if you change the QNX configuration.</div>
+</section>
+
+<section class="card">
+  <h2>Prerequisites</h2>
+  <ul><li>A host running macOS, Linux or Windows with <strong>Python 3.11+</strong> (no pip packages, no network).</li><li>A clone of <code><a href="https://github.com/mimimoneydev/qnx-chronoscope">https://github.com/mimimoneydev/qnx-chronoscope</a></code>.</li><li>For Step 7 and the on-target part of Step 8 only: <strong>QNX SDP 8.0 / QNX Everywhere</strong> with <code>qcc</code>, <code>mkifs</code>, <code>tracelogger</code>, <code>traceprinter</code> and <code>slogger2</code>, plus a QEMU x86_64 target or a Raspberry Pi 5 <code>aarch64le</code> image. Steps 1-6 and 9-11 need no QNX toolchain at all.</li></ul>
+</section>
+
+
+<section class="step" id="step-1-setup">
+  <div class="hd"><div class="num">1</div><h2>Set up the workspace</h2>
+    <div class="t">2 min</div></div>
+  <div class="body"><p>Clone the repository and confirm the host tool is healthy. Everything in Steps 0-6 runs on an ordinary laptop with the Python standard library only.</p><div class="codebox" data-lang="sh"><div class="cap"><span>Terminal</span><button class="copy" type="button">copy</button></div><pre><code>git clone https://github.com/mimimoneydev/qnx-chronoscope.git
+cd qnx-chronoscope
+python3 -m chronoscope version
+python3 -m chronoscope verify</code></pre></div><div class="codebox out" data-lang="text"><div class="cap"><span>Expected output (abbreviated)</span><button class="copy" type="button">copy</button></div><pre><code>Chronoscope 1.0.0 -- QNX 8.0 determinism workbench
+...
+Ran 69 tests in ~5s
+OK
+Self-verification: 69 tests, 0 failures, 0 errors</code></pre></div><div class="msg note"><b>Note:</b> <code>verify</code> runs the bundled scheduler-semantics suite. If it fails, stop here and fix the environment before continuing.</div><label class="checkpoint"><input type="checkbox"><span><b>Checkpoint:</b> <code>python3 -m chronoscope verify</code> reports 0 failures and 0 errors.</span></label><div class="refs"><b>QNX references:</b> README.md &gt; Quickstart</div></div>
+</section>
+<section class="step" id="step-2-model">
+  <div class="hd"><div class="num">2</div><h2>Describe a QNX 8.0 system in TOML</h2>
+    <div class="t">5 min</div></div>
+  <div class="body"><p>A Chronoscope model is a declarative description of the threads, priorities, deadlines and IPC topology you would otherwise spread across C source, a <code>mkifs</code> buildfile and tribal knowledge. Open <code>models/brake-by-wire.toml</code>.</p><div class="codebox" data-lang="toml"><div class="cap"><span>models/brake-by-wire.toml (abridged)</span><button class="copy" type="button">copy</button></div><pre><code>name = "brake-by-wire"
+horizon_us = 20000
+cpus = 1
+unprivileged_ceiling = 63       # procnto -P 64
+
+[[channels]]
+name = "brake"
+server = "brake_server"
+fixed_priority = true           # _NTO_CHF_FIXED_PRIORITY -- the seeded defect
+
+[[threads]]
+name = "pedal_sampler"
+priority = 50
+policy = "FIFO"
+role = "worker"
+partition = "system"
+jobs = [
+    { name = "pedal_cycle", period_us = 2000, offset_us = 0,
+      deadline_us = 1200, critical = true, steps = [
+        { op = "compute", us = 200 },
+        { op = "send", channel = "brake", service_us = 400 },
+        { op = "compute", us = 100 },
+    ] },
+]</code></pre></div><ul><li><strong>256 priority levels.</strong> <code>0</code> is idle; <code>1..62</code> are unprivileged; <code>63..253</code> require <code>PROCMGR_AID_PRIORITY</code>; <code>254</code> is reserved for clock/interrupt service threads and <code>255</code> for per-CPU IPI ISTs. The default <code>procnto -P</code> ceiling is 63.</li><li><strong>Policies.</strong> <code>FIFO</code>, <code>RR</code>, <code>OTHER</code> and <code>SPORADIC</code> are all modelled, including RR quantum and sporadic budget replenishment.</li><li><strong>Jobs.</strong> A periodic job has a period, offset, relative deadline and a script of steps (<code>compute</code>, <code>send</code>, <code>lock</code>, <code>sleep</code>, <code>pulse</code>, <code>yield</code>, <code>interrupt_wait</code>, <code>set_priority</code>).</li><li><strong>Channels.</strong> A <code>send</code> step blocks in <code>STATE_SEND</code> / <code>STATE_REPLY</code> until the server completes <code>MsgReply()</code>.</li></ul><p>The full model also declares <code>brake_server</code> at priority 20, a <code>diag_logger</code> at priority 30 that hogs the CPU, a <code>wheel_speed_ist</code> at priority 60 and a <code>wheel_tick</code> interrupt. That is the classic recipe for unbounded priority inversion.</p><div class="codebox" data-lang="sh"><div class="cap"><span>Optional: start your own model</span><button class="copy" type="button">copy</button></div><pre><code>python3 -m chronoscope init --out my-ecu.toml   # starter template to experiment with</code></pre></div><label class="checkpoint"><input type="checkbox"><span><b>Checkpoint:</b> You can point to the file that sets <code>fixed_priority = true</code> and explain which thread is the high-priority client.</span></label><div class="refs"><b>QNX references:</b> QNX 8.0 System Architecture &gt; Scheduling priority; QNX 8.0 C Library Reference &gt; ChannelCreate()</div></div>
+</section>
+<section class="step" id="step-3-reproduce">
+  <div class="hd"><div class="num">3</div><h2>Reproduce and measure the defect</h2>
+    <div class="t">4 min</div></div>
+  <div class="body"><p>Run the audit. It simulates the model on a deterministic discrete-event implementation of the Neutrino scheduler, then converts the resulting trace into a verdict, KPIs and findings.</p><div class="codebox" data-lang="sh"><div class="cap"><span>Terminal</span><button class="copy" type="button">copy</button></div><pre><code>python3 -m chronoscope audit models/brake-by-wire.toml</code></pre></div><div class="codebox out" data-lang="text"><div class="cap"><span>Expected output (abridged)</span><button class="copy" type="button">copy</button></div><pre><code>====================================================================
+  CHRONOSCOPE DETERMINISM AUDIT  brake-by-wire
+====================================================================
+  Verdict : NON-DETERMINISTIC    Score : 57.0/100
+  Jobs    : 15/15 completed    Deadline misses : 2 (13.33%)
+  WCET    : 2500.0 us    Max jitter : 1800.0 us    Max lateness : 1300.0 us
+  Inversions : 12    longest 1800.0 us    CPU : 55.25%
+  QNX IPC : 10 MsgSend, 10 MsgReply, 0 PI boosts, 3 ISRs
+--------------------------------------------------------------------
+  FINDINGS
+  [CRITICAL] DEADLINE_MISS: 2 of 15 jobs miss their deadline
+  [HIGH    ] PRIORITY_INVERSION: pedal_sampler (prio 50) was STATE_REPLY
+             on brake while diag_logger (prio 30) ran for 1800 us.
+  [HIGH    ] FIXED_PRIORITY_CHANNEL: Channel 'brake' disables priority
+             inheritance</code></pre></div><p>Read the findings, not just the verdict. Each one carries <strong>evidence</strong> (which thread, which priority, which duration), a <strong>recommendation</strong> and a <strong>QNX 8.0 documentation reference</strong>. The inversion finding names <code>diag_logger</code> at priority 30 running while <code>pedal_sampler</code> at priority 50 is <code>STATE_REPLY</code>-blocked on the brake channel — that is the unbounded blocking chain.</p><div class="msg tip"><b>Tip:</b> <code>--strict</code> turns the audit into a CI gate: it exits 1 when deadline misses remain. Try <code>python3 -m chronoscope audit models/hello-qnx.toml --strict</code> for the passing case.</div><label class="checkpoint"><input type="checkbox"><span><b>Checkpoint:</b> You can state the WCET, max lateness, number of inversions and which thread caused the longest one.</span></label><div class="refs"><b>QNX references:</b> QNX 8.0 System Architecture &gt; Priority inheritance and messages</div></div>
+</section>
+<section class="step" id="step-4-semantics">
+  <div class="hd"><div class="num">4</div><h2>Understand the QNX 8.0 semantics behind it</h2>
+    <div class="t">4 min</div></div>
+  <div class="body"><p>QNX Neutrino uses <strong>synchronous native message passing</strong>. A client calling <code>MsgSend()</code> blocks until the server calls <code>MsgReply()</code>. Because the server executes on behalf of the client, the microkernel applies <strong>message-driven priority inheritance</strong>: at *send* time, if the sender's priority is higher than the server's, the server is boosted to the sender's priority.</p><ul><li>The boost happens at <code>MsgSend()</code>, not at <code>MsgReceive()</code>.</li><li>The server priority <strong>does not revert</strong> on <code>MsgReply()</code>; it is lowered when it next receives a lower-priority message.</li><li>Pulses carry the priority of the sender (<code>SIGEV_PULSE_PRIO_INHERIT</code> is used in the target demo).</li><li><code>_NTO_CHF_FIXED_PRIORITY</code> on <code>ChannelCreate()</code> disables this inheritance entirely — useful for a deliberately fixed-priority server, catastrophic for a safety-critical channel.</li><li>Without <code>PROCMGR_AID_PRIORITY</code>, inherited priority is clamped to the highest unprivileged priority (<code>procnto -P</code> ceiling minus one). Grant the ability with <code>procmgr_ability()</code>.</li></ul><div class="codebox" data-lang="c"><div class="cap"><span>The same two knobs in QNX C code</span><button class="copy" type="button">copy</button></div><pre><code>/* target/demo/chronoscope_demo.c -- the seeded defect, on real QNX 8.0 */
+g_demo.server_chid = ChannelCreate(g_demo.cfg.fixed_priority
+                                    ? _NTO_CHF_FIXED_PRIORITY : 0);
+
+/* target/lib/chronoscope.c -- allow inheritance above procnto -P */
+abilities[0].ability = PROCMGR_AID_PRIORITY;
+abilities[0].flags   = PROCMGR_ADV_NONROOT | PROCMGR_AOP_ALLOW
+                     | PROCMGR_AINHERIT_YES;
+procmgr_ability((pid_t)0, abilities, flags);</code></pre></div><div class="msg warning"><b>Warning:</b> This is why simply raising <code>brake_server</code>'s base priority is not always the right fix: a fixed-priority channel still cannot inherit from an even higher-priority client (the wheel-speed IST at priority 60).</div><label class="checkpoint"><input type="checkbox"><span><b>Checkpoint:</b> You can explain why the server ran at priority 20 while a priority-50 client was blocked, and what QNX normally does to prevent that.</span></label><div class="refs"><b>QNX references:</b> QNX 8.0 System Architecture &gt; Priority inheritance and messages; QNX 8.0 C Library Reference &gt; procmgr_ability(), ChannelCreate(); QNX 8.0 Utilities Reference &gt; procnto (-P)</div></div>
+</section>
+<section class="step" id="step-5-fix">
+  <div class="hd"><div class="num">5</div><h2>Derive and verify a minimal fix (Autopilot)</h2>
+    <div class="t">4 min</div></div>
+  <div class="body"><p>Most timing tools stop at "you missed a deadline". Chronoscope treats the QNX system model as a search space: it generates semantically valid configuration patches, <strong>re-simulates and re-audits every candidate</strong>, and keeps only a change that measurably improves the determinism objective.</p><div class="codebox" data-lang="sh"><div class="cap"><span>Terminal</span><button class="copy" type="button">copy</button></div><pre><code>python3 -m chronoscope fix models/brake-by-wire.toml \
+    --out /tmp/fixed.toml --report /tmp/proof.html</code></pre></div><div class="codebox out" data-lang="text"><div class="cap"><span>Expected output (abridged)</span><button class="copy" type="button">copy</button></div><pre><code>====================================================================
+  CHRONOSCOPE DETERMINISM AUTOPILOT
+====================================================================
+  Candidates simulated : 18    Rounds : 1    Verified fix : YES
+  metric                            BEFORE         AFTER
+  verdict                   NON-DETERMINISTIC DETERMINISTIC
+  score                               57.0         100.0
+  deadline misses                        2             0
+  priority inversions                   12             0
+--------------------------------------------------------------------
+  PATCHES
+  1. channel: brake.fixed_priority True -&gt; False
+     why: Remove _NTO_CHF_FIXED_PRIORITY so the server inherits the
+          priority of its highest-priority client.
+     ref: C Library Reference &gt; ChannelCreate()</code></pre></div><p>Candidate patch families include: clearing <code>_NTO_CHF_FIXED_PRIORITY</code>, granting <code>PROCMGR_AID_PRIORITY</code>, raising server/client priorities, switching RR/OTHER to FIFO, increasing <code>SCHED_SPORADIC</code> budget, adding a CPU, widening the <code>procnto -P</code> ceiling, increasing the RR quantum, rebalancing APS budgets and marking critical threads. The objective is dominated by deadline misses (1,000,000x) and inversion episodes (100,000x), so cosmetic jitter wins cannot outvote a correctness fix.</p><div class="msg tip"><b>Tip:</b> A healthy configuration is left alone: running <code>fix</code> on <code>models/hello-qnx.toml</code> returns zero patches. The Autopilot is a repair tool, not a tuning tool.</div><div class="codebox" data-lang="sh"><div class="cap"><span>Verify the patched model independently</span><button class="copy" type="button">copy</button></div><pre><code>python3 -m chronoscope audit /tmp/fixed.toml --strict
+# exit 0 -- every modelled job now meets its deadline</code></pre></div><label class="checkpoint"><input type="checkbox"><span><b>Checkpoint:</b> The proof shows 0 deadline misses and 0 inversions after the patch, and you can name the single QNX flag that changed.</span></label><div class="refs"><b>QNX references:</b> chronoscope/autopilot.py &gt; objective(), _candidates()</div></div>
+</section>
+<section class="step" id="step-6-evidence">
+  <div class="hd"><div class="num">6</div><h2>Publish offline timing evidence</h2>
+    <div class="t">3 min</div></div>
+  <div class="body"><p>A safety argument needs an artifact, not a terminal scrollback. <code>report</code> renders a single self-contained HTML file with an interactive per-thread timeline, deadline markers, priority-inversion shading, ISR stubs and the before/after proof.</p><div class="codebox" data-lang="sh"><div class="cap"><span>Terminal</span><button class="copy" type="button">copy</button></div><pre><code>python3 -m chronoscope report models/brake-by-wire.toml \
+    --fix --out /tmp/brake-by-wire.html --markdown /tmp/brake-by-wire.md
+
+python3 -m chronoscope audit models/brake-by-wire.toml --json /tmp/audit.json</code></pre></div><ul><li><strong>No external URLs.</strong> Open the HTML offline, in an air-gapped review, or inside a QNX build container.</li><li><strong>Structured timing evidence</strong> in JSON: verdict, per-job release/response/deadline, per-thread WCET and jitter, inversion episodes, QNX IPC counts and APS/ISR metrics.</li><li><strong>Explicit scope statement</strong>: this is engineering evidence for an ISO 26262 / IEC 62304 / DO-178C-style safety case, *not* a certification artifact or a claim of compliance.</li><li><code>--strict</code> makes an audit a pass/fail CI gate; <code>--json</code> feeds regression dashboards.</li></ul><div class="codebox" data-lang="sh"><div class="cap"><span>Generate every artifact at once</span><button class="copy" type="button">copy</button></div><pre><code>python3 -m chronoscope demo --out-dir demo
+# writes an HTML report + JSON per model, proof.html, proof.json,
+# a traceprinter-compatible qnx-kernel-trace.txt and a README</code></pre></div><label class="checkpoint"><input type="checkbox"><span><b>Checkpoint:</b> <code>/tmp/brake-by-wire.html</code> opens with no network access and shows the before/after timeline.</span></label><div class="refs"><b>QNX references:</b> chronoscope/report.py &gt; render_html(), report_json()</div></div>
+</section>
+<section class="step" id="step-7-target">
+  <div class="hd"><div class="num">7</div><h2>Reproduce it on a real QNX 8.0 target</h2>
+    <div class="t">6 min</div></div>
+  <div class="body"><p>Now close the loop on QNX itself. With <strong>QNX SDP 8.0 / QNX Everywhere</strong> installed, source <code>qnxsdp-env.sh</code> and cross-build the target probe with <code>qcc</code>.</p><div class="codebox" data-lang="sh"><div class="cap"><span>Host terminal (QNX SDP 8.0)</span><button class="copy" type="button">copy</button></div><pre><code>cd target
+./scripts/build-target.sh x86_64       # lib + demo + resmgr + mkifs image
+./scripts/run-qemu.sh                  # boots the QNX 8.0 IFS in QEMU</code></pre></div><div class="codebox" data-lang="text"><div class="cap"><span>target/images/chronoscope.build (abridged)</span><button class="copy" type="button">copy</button></div><pre><code>[virtual=x86_64,elf] .bootstrap = {
+    startup-x86
+    procnto-smp-instr -P 64
+}
+[+script] startup-script = {
+    PATH=/proc/boot:/usr/bin:/bin
+    slogger2 -d -s 256k &amp;
+    tracelogger -d1 -f /tmp/chronoscope.kev -n 8 &amp;
+    /usr/bin/chronoscope_resmgr &amp;
+    waitfor /dev/chronoscope 5
+    /usr/bin/chronoscope_demo --inherit --iterations 10
+}</code></pre></div><p><code>procnto-smp-instr</code> is required for <code>tracelogger</code>; <code>-P 64</code> sets the unprivileged priority ceiling that the model mirrors. The demo uses <code>ClockTime(CLOCK_MONOTONIC)</code>, <code>timer_create()</code>+<code>SIGEV_PULSE_INIT</code>, <code>ChannelCreate()</code>, <code>ConnectAttach()</code>, <code>MsgSend()</code>/<code>MsgReceive()</code>/<code>MsgReply()</code>, <code>pthread_setschedparam(SCHED_FIFO, ...)</code> and <code>slog2f()</code>.</p><div class="codebox" data-lang="sh"><div class="cap"><span>QNX 8.0 target shell</span><button class="copy" type="button">copy</button></div><pre><code># Inside the QNX 8.0 target
+chronoscope_demo --fixed-priority --iterations 10   # reproduce the defect
+chronoscope_demo --inherit       --iterations 10   # QNX priority inheritance
+
+slog2info -b chronoscope &gt; /tmp/chronoscope.slog
+tracelogger -d1 -f /tmp/chronoscope.kev -n 8 -s 3
+traceprinter -f /tmp/chronoscope.kev &gt; /tmp/qnx-kernel-trace.txt
+pidin -F '%P %T %n %p %S' &gt; /tmp/pidin.txt</code></pre></div><p>The <code>CHRONO</code> annotations emitted by <code>slog2f()</code> carry job release/completion, <code>MsgSend</code>/<code>MsgReply</code>, priority boosts and the channel flag, so the host importer can reconstruct the same <code>Trace</code> object from a real target.</p><div class="msg note"><b>Note:</b> Raspberry Pi 5: build with <code>./scripts/build-target.sh aarch64le</code> and adapt the buildfile's <code>[virtual=...]</code> / startup to the Pi 5 board support package. See <code>target/scripts/run-rpi5.md</code>.</div><div class="msg tip"><b>Tip:</b> No QNX hardware handy? Steps 1-6 and 9-11 are fully runnable on a laptop, and <code>python3 -m chronoscope demo</code> writes a traceprinter-compatible trace you can use in Step 8.</div><label class="checkpoint"><input type="checkbox"><span><b>Checkpoint:</b> You can name the tool that produces the kernel event file (<code>tracelogger</code>) and the one that renders it (<code>traceprinter</code>).</span></label><div class="refs"><b>QNX references:</b> QNX 8.0 Utilities Reference &gt; tracelogger, traceprinter, pidin, slog2info; QNX 8.0 Programmer&#x27;s Guide &gt; Resource managers; target/README.md &gt; QNX 8.0 API map</div></div>
+</section>
+<section class="step" id="step-8-reconcile">
+  <div class="hd"><div class="num">8</div><h2>Import real traces and reconcile</h2>
+    <div class="t">4 min</div></div>
+  <div class="body"><p>Chronoscope speaks QNX tool output directly. The simulated trace uses the same <code>traceprinter</code> vocabulary (<code>THREAD :THRUNNING</code>, <code>KER_CALL :MsgSend()</code>, <code>PROCESS :PROCCREATE</code>) so it can be round-tripped through the importer — a useful way to verify the parser without hardware.</p><div class="codebox" data-lang="sh"><div class="cap"><span>Host terminal</span><button class="copy" type="button">copy</button></div><pre><code>python3 -m chronoscope simulate models/brake-by-wire.toml \
+    --out /tmp/simulated.json --traceprinter /tmp/simulated-trace.txt
+
+python3 -m chronoscope import /tmp/qnx-kernel-trace.txt \
+    --format traceprinter --audit
+python3 -m chronoscope import /tmp/chronoscope.slog --format slog2 --audit
+python3 -m chronoscope import /tmp/pidin.txt --format pidin
+
+python3 -m chronoscope reconcile /tmp/simulated.json /tmp/qnx-kernel-trace.txt</code></pre></div><div class="codebox out" data-lang="text"><div class="cap"><span>Reconciliation output (shape)</span><button class="copy" type="button">copy</button></div><pre><code>MODEL / TARGET RECONCILIATION
+  Verdict : DRIFT DETECTED
+  rows    : 15 jobs
+  ...</code></pre></div><p><code>reconcile</code> compares per-job release, response and deadline outcomes between the simulated trace and the measured QNX trace. <code>ALIGNED</code> means the model predicts the target; <code>DRIFT DETECTED</code> means your WCET assumptions, priority assignments or boot configuration need revisiting. This is the step that turns a nice simulation into a tool you can trust.</p><div class="msg tip"><b>Tip:</b> Priority tags (<code>prio:&lt;n&gt;</code>) and process names survive export/import, so inversion analysis works on imported traces too. On SMP targets, blocked segments are tagged with the CPU the thread last ran on, so a low-priority thread on another CPU is not falsely blamed.</div><label class="checkpoint"><input type="checkbox"><span><b>Checkpoint:</b> You can import the demo's <code>qnx-kernel-trace.txt</code> and get a non-deterministic verdict with the same missed deadlines.</span></label><div class="refs"><b>QNX references:</b> chronoscope/importers.py &gt; parse_traceprinter(), reconcile()</div></div>
+</section>
+<section class="step" id="step-9-buildfile">
+  <div class="hd"><div class="num">9</div><h2>Lint the boot image for determinism hazards</h2>
+    <div class="t">3 min</div></div>
+  <div class="body"><p>Determinism is decided before <code>main()</code> runs. <code>inspect</code> parses a <code>mkifs</code> <code>.build</code> file and applies 12 checks, including cross-checking model priorities against the <code>procnto -P</code> boot ceiling.</p><div class="codebox" data-lang="sh"><div class="cap"><span>Terminal</span><button class="copy" type="button">copy</button></div><pre><code>python3 -m chronoscope inspect target/images/chronoscope.build \
+    --model models/brake-by-wire.toml</code></pre></div><div class="codebox out" data-lang="text"><div class="cap"><span>Expected output (abridged)</span><button class="copy" type="button">copy</button></div><pre><code>QNX 8.0 BUILDFILE DETERMINISM CHECK  (100.0/100)
+  [PASS] VIRTUAL                    [PASS] ARCH_64
+  [PASS] INSTRUMENTED_KERNEL        [PASS] STARTUP_SCRIPT
+  [PASS] SLOGGER2                   [PASS] LIBC
+  [PASS] ENV_PATH                   [PASS] TRACELOGGER
+  [PASS] PROBE                      [PASS] PRIORITY_CEILING
+  [PASS] ABILITY                    [PASS] MODEL_PRIORITY_VS_BOOT</code></pre></div><p>Try removing <code>procnto-smp-instr</code> from a copy of the buildfile and re-running the check: <code>INSTRUMENTED_KERNEL</code> fails, because <code>tracelogger</code> cannot work without the instrumented microkernel. Try setting a model priority above the boot ceiling to see <code>MODEL_PRIORITY_VS_BOOT</code> fail.</p><label class="checkpoint"><input type="checkbox"><span><b>Checkpoint:</b> You can explain why shipping a non-instrumented kernel breaks the whole measurement workflow.</span></label><div class="refs"><b>QNX references:</b> chronoscope/buildfile.py &gt; lint_buildfile()</div></div>
+</section>
+<section class="step" id="step-10-quiz">
+  <div class="hd"><div class="num">10</div><h2>Knowledge check</h2>
+    <div class="t">2 min</div></div>
+  <div class="body"><p>Answers are in the expandable section at the end of the page.</p><ul><li><strong>Q1.</strong> On QNX 8.0, when does message-driven priority inheritance boost a server — at <code>MsgSend()</code> or <code>MsgReply()</code>?</li><li><strong>Q2.</strong> Does a server's priority revert when it calls <code>MsgReply()</code>?</li><li><strong>Q3.</strong> What does <code>_NTO_CHF_FIXED_PRIORITY</code> do, and why did clearing it fix the brake-by-wire ECU?</li><li><strong>Q4.</strong> Why might granting <code>PROCMGR_AID_PRIORITY</code> still be necessary after clearing the fixed-priority flag?</li><li><strong>Q5.</strong> Which priorities are reserved for QNX interrupt service threads, and what is the default <code>procnto -P</code> ceiling?</li><li><strong>Q6.</strong> Why must the image boot <code>procnto-smp-instr</code> rather than plain <code>procnto</code>?</li></ul></div>
+</section>
+<section class="step" id="step-11-next">
+  <div class="hd"><div class="num">11</div><h2>Where to go next</h2>
+    <div class="t">2 min</div></div>
+  <div class="body"><p>The repository ships five more models, each exercising a different QNX 8.0 mechanism:</p><ul><li><code>models/hello-qnx.toml</code> — a clean baseline (score 100/100, one message-driven priority boost).</li><li><code>models/adaptive-partition.toml</code> — APS budget exhaustion and bankruptcy on a starved safety partition.</li><li><code>models/sporadic-server.toml</code> — <code>SCHED_SPORADIC</code> budget enforcement and low-priority degradation.</li><li><code>models/multicore-affinity.toml</code> — SMP runmasks and CPU-aware inversion detection.</li><li><code>models/infusion-pump.toml</code> — mutex priority inheritance in a medical device.</li></ul><p>Try <code>python3 -m chronoscope demo --out-dir demo</code> to audit all of them, or <code>python3 -m chronoscope audit &lt;model&gt; --strict</code> in CI. When a real target disagrees with the model, use <code>reconcile</code> to find out where.</p><div class="msg note"><b>Note:</b> Troubleshooting: (1) <code>ModuleNotFoundError: chronoscope</code> means you are not in the repository root. (2) <code>ModelError: priority 0 is reserved for idle</code> — use 1..253. (3) If <code>reconcile</code> reports drift, check <code>procnto -P</code> in the buildfile matches <code>unprivileged_ceiling</code> in the model. (4) <code>traceprinter</code> needs <code>procnto-smp-instr</code>.</div><p><strong>References:</strong> QNX 8.0 documentation at <a href="https://www.qnx.com/developers/docs/8.0/">https://www.qnx.com/developers/docs/8.0/</a> — System Architecture (scheduling, priority inheritance), C Library Reference (<code>ChannelCreate</code>, <code>procmgr_ability</code>, <code>MsgSend</code>), Utilities Reference (<code>procnto</code>, <code>tracelogger</code>, <code>traceprinter</code>, <code>pidin</code>, <code>slog2info</code>), Adaptive Partitioning User's Guide and the Programmer's Guide (Multicore Processing, Resource Managers). Sample projects: <a href="https://gitlab.com/qnx/projects">https://gitlab.com/qnx/projects</a>.</p></div>
+</section>
+
+<section class="card">
+  <h2>Knowledge check &mdash; answers</h2>
+  <details><summary>Show answers</summary><ol><li>At <code>MsgSend()</code> time, when a higher-priority client sends to a lower-priority server. The microkernel boosts the server immediately so it can run on the client's behalf.</li><li>No. The elevated priority persists; it is lowered when the server next receives a message from a lower-priority client.</li><li>It disables inheritance for that channel. With it set, <code>brake_server</code> stayed at priority 20 while the priority-50 <code>pedal_sampler</code> was <code>STATE_REPLY</code>-blocked, so <code>diag_logger</code> (priority 30) could run for 1800 us. Clearing it lets the server inherit priority 50 and preempt the logger.</li><li>Because without <code>PROCMGR_AID_PRIORITY</code>, inherited priority is clamped to the highest unprivileged priority (<code>procnto -P</code> ceiling minus one, i.e. 62 by default). A client above that ceiling still cannot be inherited.</li><li>254 for clock/in-kernel interrupt service threads and 255 for per-processor IPI ISTs. The default unprivileged ceiling is 63 (<code>procnto -P 63</code>), i.e. priorities 63..253 are privileged.</li><li><code>tracelogger</code> and the kernel event trace require the instrumented microkernel. Without it there is no event file for <code>traceprinter</code>, so the entire measurement and reconciliation workflow has no input.</li></ol></details>
+</section>
+
+<footer>
+  Chronoscope for QNX 8.0 &middot; Codelab authored November 2026 (QNX Global Hackathon Submission Period)
+  &middot; <a href="https://github.com/mimimoneydev/qnx-chronoscope">https://github.com/mimimoneydev/qnx-chronoscope</a> &middot; MIT License.
+  QNX is a trademark of BlackBerry Limited; this project is not affiliated
+  with or endorsed by BlackBerry/QNX.
+</footer>
+</main></div>
+<script>
+(function(){
+  var keys=[], boxes=[];
+  document.querySelectorAll('.checkpoint input').forEach(function(el,i){
+    var k='chrono-codelab-'+i; keys.push(k); boxes.push(el);
+    try{ el.checked = localStorage.getItem(k)==='1'; }catch(e){}
+    el.addEventListener('change',function(){
+      try{ localStorage.setItem(k, el.checked?'1':'0'); }catch(e){}
+      paint();
+    });
+    var step=el.closest('.step');
+    el.addEventListener('change',function(){
+      var all=[].slice.call(step.querySelectorAll('.checkpoint input'));
+      var done=all.length && all.every(function(x){return x.checked;});
+      var link=document.querySelector('nav a[href="#'+step.id+'"]');
+      if(link) link.classList.toggle('done',!!done);
+    });
+  });
+  function paint(){
+    var n=boxes.filter(function(b){return b.checked;}).length;
+    document.getElementById('pbar').style.width=(100*n/Math.max(boxes.length,1))+'%';
+    document.getElementById('pct').textContent=n+' of '+boxes.length+' checkpoints complete';
+  }
+  paint();
+  boxes.forEach(function(b){
+    var step=b.closest('.step');
+    var all=[].slice.call(step.querySelectorAll('.checkpoint input'));
+    if(all.length && all.every(function(x){return x.checked;})){
+      var link=document.querySelector('nav a[href="#'+step.id+'"]');
+      if(link) link.classList.add('done');
+    }
+  });
+  document.querySelectorAll('button.copy').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var pre=btn.closest('.codebox').querySelector('pre');
+      var txt=pre?pre.innerText:'';
+      navigator.clipboard.writeText(txt).then(function(){
+        btn.textContent='copied'; setTimeout(function(){btn.textContent='copy';},1200);
+      });
+    });
+  });
+})();
+</script></body></html>

@@ -1,0 +1,215 @@
+{
+  "verdict": "NON-DETERMINISTIC",
+  "score": 75.0,
+  "kpis": {
+    "total_jobs": 20,
+    "completed_jobs": 20,
+    "deadline_misses": 2,
+    "miss_rate_pct": 10.0,
+    "worst_case_response_us": 2800.0,
+    "max_lateness_us": 200.0,
+    "max_jitter_us": 1600.0,
+    "cpu_utilization_pct": 85.0,
+    "priority_inversion_episodes": 0,
+    "max_priority_inversion_us": 0.0,
+    "message_driven_priority_boosts": 0,
+    "msg_send_transactions": 0,
+    "msg_reply_transactions": 0,
+    "rr_quantum_expiries": 0,
+    "sporadic_budget_drops": 0,
+    "aps_bankruptcies": 2,
+    "isr_count": 0,
+    "max_isr_to_ist_us": 0.0,
+    "horizon_us": 24000.0,
+    "cpus": 1,
+    "trace_source": "simulated"
+  },
+  "findings": [
+    {
+      "severity": "CRITICAL",
+      "code": "DEADLINE_MISS",
+      "title": "2 of 20 jobs miss their deadline",
+      "detail": "Worst lateness 200 us; affected threads: safety_loop (2). Worst-case response time 2800 us.",
+      "evidence": "trace.jobs[].response_us / status; chronoscope/audit.py:audit()",
+      "recommendation": "Run `chronoscope fix` to derive a counterfactually verified priority/inheritance/partition configuration, then re-audit.",
+      "qnx_reference": "System Architecture > What is Real Time and Why Do I Need It?"
+    },
+    {
+      "severity": "MEDIUM",
+      "code": "APS_BANKRUPTCY",
+      "title": "2 adaptive-partition budget exhaustion(s)",
+      "detail": "A partition consumed its percentage budget inside the averaging window; its threads were throttled until the window rolled over.",
+      "evidence": "trace.meta.aps_bankruptcies; chronoscope/kernel.py:_on_aps_window()",
+      "recommendation": "Rebalance partition budgets, mark genuinely critical threads critical, or shorten the workload in the non-critical partition.",
+      "qnx_reference": "Adaptive Partitioning User's Guide > Bankruptcy"
+    },
+    {
+      "severity": "MEDIUM",
+      "code": "TIMING_ANOMALY",
+      "title": "latency_spike on safety_loop (job #4, 1300.0 us)",
+      "detail": "robust z=444.44 (median=900.0us, MAD-sigma=0.900us); response time is 1.4x baseline",
+      "evidence": "chronoscope/anomaly.py:detect_anomalies() robust z-score / CUSUM",
+      "recommendation": "Compare with a traceprinter dump from the QNX 8.0 target using `chronoscope reconcile`.",
+      "qnx_reference": "System Analysis Toolkit User's Guide > Events and the Kernel"
+    },
+    {
+      "severity": "MEDIUM",
+      "code": "TIMING_ANOMALY",
+      "title": "latency_spike on safety_loop (job #5, 2100.0 us)",
+      "detail": "robust z=1333.33 (median=900.0us, MAD-sigma=0.900us); response time is 2.3x baseline",
+      "evidence": "chronoscope/anomaly.py:detect_anomalies() robust z-score / CUSUM",
+      "recommendation": "Compare with a traceprinter dump from the QNX 8.0 target using `chronoscope reconcile`.",
+      "qnx_reference": "System Analysis Toolkit User's Guide > Events and the Kernel"
+    },
+    {
+      "severity": "MEDIUM",
+      "code": "TIMING_ANOMALY",
+      "title": "latency_spike on safety_loop (job #10, 2100.0 us)",
+      "detail": "robust z=1333.33 (median=900.0us, MAD-sigma=0.900us); response time is 2.3x baseline",
+      "evidence": "chronoscope/anomaly.py:detect_anomalies() robust z-score / CUSUM",
+      "recommendation": "Compare with a traceprinter dump from the QNX 8.0 target using `chronoscope reconcile`.",
+      "qnx_reference": "System Analysis Toolkit User's Guide > Events and the Kernel"
+    }
+  ],
+  "per_thread": [
+    {
+      "thread": "hmi_render",
+      "priority": 10,
+      "jobs": 8,
+      "misses": 0,
+      "min_us": 1200.0,
+      "mean_us": 1900.0,
+      "wcet_us": 2800.0,
+      "jitter_us": 1600.0,
+      "cpu_us": 9600.0
+    },
+    {
+      "thread": "safety_loop",
+      "priority": 45,
+      "jobs": 12,
+      "misses": 2,
+      "min_us": 900.0,
+      "mean_us": 1175.0,
+      "wcet_us": 2100.0,
+      "jitter_us": 1200.0,
+      "cpu_us": 10800.0
+    }
+  ],
+  "inversions": [],
+  "partition_usage": [
+    {
+      "partition": "safety",
+      "budget_pct": 30.0,
+      "measured_pct": 52.94,
+      "used_us": 10800.0,
+      "bankruptcies": 2
+    },
+    {
+      "partition": "hmi",
+      "budget_pct": 70.0,
+      "measured_pct": 47.06,
+      "used_us": 9600.0,
+      "bankruptcies": 0
+    }
+  ],
+  "timing_evidence": {
+    "purpose": "Structured timing evidence for an ISO 26262 / IEC 62304 / DO-178C style safety case. This is engineering evidence, NOT a certification artifact or a claim of compliance.",
+    "tool": "Chronoscope for QNX 8.0 (host-based determinism workbench)",
+    "qnx_version": "8.0",
+    "trace_source": "simulated",
+    "trace_tool": "Chronoscope simulator",
+    "scheduling_model": "QNX Neutrino: 256 priority levels, message-driven priority inheritance, SCHED_FIFO/RR/SPORADIC, adaptive partitioning",
+    "wcet_and_jitter_per_thread": [
+      {
+        "thread": "hmi_render",
+        "priority": 10,
+        "jobs": 8,
+        "misses": 0,
+        "min_us": 1200.0,
+        "mean_us": 1900.0,
+        "wcet_us": 2800.0,
+        "jitter_us": 1600.0,
+        "cpu_us": 9600.0
+      },
+      {
+        "thread": "safety_loop",
+        "priority": 45,
+        "jobs": 12,
+        "misses": 2,
+        "min_us": 900.0,
+        "mean_us": 1175.0,
+        "wcet_us": 2100.0,
+        "jitter_us": 1200.0,
+        "cpu_us": 10800.0
+      }
+    ],
+    "deadline_miss_count": 2,
+    "worst_case_response_us": 2800.0,
+    "max_priority_inversion_us": 0.0,
+    "max_isr_to_ist_us": 0.0,
+    "cpu_utilization_pct": 85.0,
+    "priority_assignment": {
+      "hmi_render": 10,
+      "safety_loop": 45
+    },
+    "partition_budget_consumption": [
+      {
+        "partition": "safety",
+        "budget_pct": 30.0,
+        "measured_pct": 52.94,
+        "used_us": 10800.0,
+        "bankruptcies": 2
+      },
+      {
+        "partition": "hmi",
+        "budget_pct": 70.0,
+        "measured_pct": 47.06,
+        "used_us": 9600.0,
+        "bankruptcies": 0
+      }
+    ],
+    "reproducibility": "Deterministic discrete-event replay; re-run `chronoscope simulate MODEL` to reproduce exactly."
+  },
+  "anomalies": [
+    {
+      "thread": "safety_loop",
+      "index": 4,
+      "kind": "latency_spike",
+      "value_us": 1300.0,
+      "score": 444.44,
+      "explanation": "robust z=444.44 (median=900.0us, MAD-sigma=0.900us); response time is 1.4x baseline"
+    },
+    {
+      "thread": "safety_loop",
+      "index": 5,
+      "kind": "latency_spike",
+      "value_us": 2100.0,
+      "score": 1333.33,
+      "explanation": "robust z=1333.33 (median=900.0us, MAD-sigma=0.900us); response time is 2.3x baseline"
+    },
+    {
+      "thread": "safety_loop",
+      "index": 10,
+      "kind": "latency_spike",
+      "value_us": 2100.0,
+      "score": 1333.33,
+      "explanation": "robust z=1333.33 (median=900.0us, MAD-sigma=0.900us); response time is 2.3x baseline"
+    },
+    {
+      "thread": "safety_loop",
+      "index": 17,
+      "kind": "latency_spike",
+      "value_us": 1000.0,
+      "score": 111.11,
+      "explanation": "robust z=111.11 (median=900.0us, MAD-sigma=0.900us); response time is 1.1x baseline"
+    },
+    {
+      "thread": "safety_loop",
+      "index": 19,
+      "kind": "latency_spike",
+      "value_us": 1300.0,
+      "score": 444.44,
+      "explanation": "robust z=444.44 (median=900.0us, MAD-sigma=0.900us); response time is 1.4x baseline"
+    }
+  ]
+}

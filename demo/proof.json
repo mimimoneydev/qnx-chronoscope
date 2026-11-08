@@ -1,0 +1,586 @@
+{
+  "verified": true,
+  "patches": [
+    {
+      "kind": "channel",
+      "target": "brake",
+      "field": "fixed_priority",
+      "old": true,
+      "new": false,
+      "reason": "Remove _NTO_CHF_FIXED_PRIORITY so the server inherits the priority of its highest-priority client.",
+      "qnx_reference": "C Library Reference > ChannelCreate()"
+    }
+  ],
+  "candidates_evaluated": 18,
+  "rounds": 1,
+  "baseline": {
+    "verdict": "NON-DETERMINISTIC",
+    "score": 57.0,
+    "kpis": {
+      "total_jobs": 15,
+      "completed_jobs": 15,
+      "deadline_misses": 2,
+      "miss_rate_pct": 13.33,
+      "worst_case_response_us": 2500.0,
+      "max_lateness_us": 1300.0,
+      "max_jitter_us": 1800.0,
+      "cpu_utilization_pct": 55.25,
+      "priority_inversion_episodes": 12,
+      "max_priority_inversion_us": 1800.0,
+      "message_driven_priority_boosts": 0,
+      "msg_send_transactions": 10,
+      "msg_reply_transactions": 10,
+      "rr_quantum_expiries": 0,
+      "sporadic_budget_drops": 0,
+      "aps_bankruptcies": 0,
+      "isr_count": 3,
+      "max_isr_to_ist_us": 20.0,
+      "horizon_us": 20000.0,
+      "cpus": 1,
+      "trace_source": "simulated"
+    },
+    "findings": [
+      {
+        "severity": "CRITICAL",
+        "code": "DEADLINE_MISS",
+        "title": "2 of 15 jobs miss their deadline",
+        "detail": "Worst lateness 1300 us; affected threads: pedal_sampler (2). Worst-case response time 2500 us.",
+        "evidence": "trace.jobs[].response_us / status; chronoscope/audit.py:audit()",
+        "recommendation": "Run `chronoscope fix` to derive a counterfactually verified priority/inheritance/partition configuration, then re-audit.",
+        "qnx_reference": "System Architecture > What is Real Time and Why Do I Need It?"
+      },
+      {
+        "severity": "HIGH",
+        "code": "PRIORITY_INVERSION",
+        "title": "12 priority-inversion episode(s), longest 1800 us",
+        "detail": "pedal_sampler (prio 50) was STATE_REPLY on brake while diag_logger (prio 30) ran for 1800 us.",
+        "evidence": "trace.segments (kind='blocked', contended STATE_SEND/REPLY/MUTEX/SEM states only) overlapped with kind='run'; chronoscope/audit.py:_find_inversions()",
+        "recommendation": "Enable QNX message-driven priority inheritance (remove _NTO_CHF_FIXED_PRIORITY), grant PROCMGR_AID_PRIORITY to the server, or raise the server's base priority.",
+        "qnx_reference": "System Architecture > Priority inheritance and messages"
+      },
+      {
+        "severity": "HIGH",
+        "code": "FIXED_PRIORITY_CHANNEL",
+        "title": "Channel 'brake' disables priority inheritance",
+        "detail": "_NTO_CHF_FIXED_PRIORITY is set while 1 higher-priority client(s) send to a lower-priority server (brake_server). This is the classic unbounded priority inversion.",
+        "evidence": "models/*.toml [[channels]] fixed_priority; target/resmgr/chronoscope_resmgr.c ChannelCreate()",
+        "recommendation": "Clear _NTO_CHF_FIXED_PRIORITY, or use pthread_mutexattr_setprotocol(PTHREAD_PRIO_INHERIT).",
+        "qnx_reference": "C Library Reference > ChannelCreate()"
+      },
+      {
+        "severity": "MEDIUM",
+        "code": "TIMING_ANOMALY",
+        "title": "latency_spike on pedal_sampler (job #0, 2500.0 us)",
+        "detail": "robust z=2571.43 (median=700.0us, MAD-sigma=0.700us); response time is 3.6x baseline",
+        "evidence": "chronoscope/anomaly.py:detect_anomalies() robust z-score / CUSUM",
+        "recommendation": "Compare with a traceprinter dump from the QNX 8.0 target using `chronoscope reconcile`.",
+        "qnx_reference": "System Analysis Toolkit User's Guide > Events and the Kernel"
+      },
+      {
+        "severity": "MEDIUM",
+        "code": "TIMING_ANOMALY",
+        "title": "latency_spike on pedal_sampler (job #6, 870.0 us)",
+        "detail": "robust z=242.86 (median=700.0us, MAD-sigma=0.700us); response time is 1.2x baseline",
+        "evidence": "chronoscope/anomaly.py:detect_anomalies() robust z-score / CUSUM",
+        "recommendation": "Compare with a traceprinter dump from the QNX 8.0 target using `chronoscope reconcile`.",
+        "qnx_reference": "System Analysis Toolkit User's Guide > Events and the Kernel"
+      },
+      {
+        "severity": "MEDIUM",
+        "code": "TIMING_ANOMALY",
+        "title": "latency_spike on pedal_sampler (job #8, 2500.0 us)",
+        "detail": "robust z=2571.43 (median=700.0us, MAD-sigma=0.700us); response time is 3.6x baseline",
+        "evidence": "chronoscope/anomaly.py:detect_anomalies() robust z-score / CUSUM",
+        "recommendation": "Compare with a traceprinter dump from the QNX 8.0 target using `chronoscope reconcile`.",
+        "qnx_reference": "System Analysis Toolkit User's Guide > Events and the Kernel"
+      },
+      {
+        "severity": "LOW",
+        "code": "ISR_TO_IST_LATENCY",
+        "title": "Maximum ISR-to-IST latency 20 us",
+        "detail": "Interrupt stubs are non-preemptible on this model; the IST is released after the stub and any higher-priority in-kernel ISTs.",
+        "evidence": "trace.events[kind='interrupt_entry'|'job_release']",
+        "recommendation": "Keep the ISR stub minimal; do the work in the IST (QNX InterruptAttachEvent / SIGEV_INTR).",
+        "qnx_reference": "Programmer's Guide > Handling Hardware Interrupts"
+      }
+    ],
+    "per_thread": [
+      {
+        "thread": "brake_server",
+        "priority": 20,
+        "jobs": 0,
+        "misses": 0,
+        "min_us": null,
+        "mean_us": null,
+        "wcet_us": null,
+        "jitter_us": 0.0,
+        "cpu_us": 4000.0
+      },
+      {
+        "thread": "diag_logger",
+        "priority": 30,
+        "jobs": 2,
+        "misses": 0,
+        "min_us": 1900.0,
+        "mean_us": 1900.0,
+        "wcet_us": 1900.0,
+        "jitter_us": 0.0,
+        "cpu_us": 3600.0
+      },
+      {
+        "thread": "pedal_sampler",
+        "priority": 50,
+        "jobs": 10,
+        "misses": 2,
+        "min_us": 700.0,
+        "mean_us": 1077.0,
+        "wcet_us": 2500.0,
+        "jitter_us": 1800.0,
+        "cpu_us": 3000.0
+      },
+      {
+        "thread": "wheel_speed_ist",
+        "priority": 60,
+        "jobs": 3,
+        "misses": 0,
+        "min_us": 150.0,
+        "mean_us": 150.0,
+        "wcet_us": 150.0,
+        "jitter_us": 0.0,
+        "cpu_us": 450.0
+      }
+    ],
+    "inversions": [
+      {
+        "blocked_thread": "pedal_sampler",
+        "blocked_priority": 50,
+        "blocked_reason": "STATE_REPLY on brake",
+        "culprit": "diag_logger",
+        "culprit_priority": 30,
+        "start_us": 200.0,
+        "end_us": 2400.0,
+        "duration_us": 1800.0
+      },
+      {
+        "blocked_thread": "pedal_sampler",
+        "blocked_priority": 50,
+        "blocked_reason": "STATE_REPLY on brake",
+        "culprit": "diag_logger",
+        "culprit_priority": 30,
+        "start_us": 10200.0,
+        "end_us": 12400.0,
+        "duration_us": 1800.0
+      },
+      {
+        "blocked_thread": "pedal_sampler",
+        "blocked_priority": 50,
+        "blocked_reason": "STATE_REPLY on brake",
+        "culprit": "brake_server",
+        "culprit_priority": 20,
+        "start_us": 200.0,
+        "end_us": 2400.0,
+        "duration_us": 400.0
+      },
+      {
+        "blocked_thread": "pedal_sampler",
+        "blocked_priority": 50,
+        "blocked_reason": "STATE_REPLY on brake",
+        "culprit": "brake_server",
+        "culprit_priority": 20,
+        "start_us": 2700.0,
+        "end_us": 3100.0,
+        "duration_us": 400.0
+      },
+      {
+        "blocked_thread": "pedal_sampler",
+        "blocked_priority": 50,
+        "blocked_reason": "STATE_REPLY on brake",
+        "culprit": "brake_server",
+        "culprit_priority": 20,
+        "start_us": 4200.0,
+        "end_us": 4600.0,
+        "duration_us": 400.0
+      },
+      {
+        "blocked_thread": "pedal_sampler",
+        "blocked_priority": 50,
+        "blocked_reason": "STATE_REPLY on brake",
+        "culprit": "brake_server",
+        "culprit_priority": 20,
+        "start_us": 6200.0,
+        "end_us": 6600.0,
+        "duration_us": 400.0
+      },
+      {
+        "blocked_thread": "pedal_sampler",
+        "blocked_priority": 50,
+        "blocked_reason": "STATE_REPLY on brake",
+        "culprit": "brake_server",
+        "culprit_priority": 20,
+        "start_us": 8200.0,
+        "end_us": 8770.0,
+        "duration_us": 400.0
+      },
+      {
+        "blocked_thread": "pedal_sampler",
+        "blocked_priority": 50,
+        "blocked_reason": "STATE_REPLY on brake",
+        "culprit": "brake_server",
+        "culprit_priority": 20,
+        "start_us": 10200.0,
+        "end_us": 12400.0,
+        "duration_us": 400.0
+      },
+      {
+        "blocked_thread": "pedal_sampler",
+        "blocked_priority": 50,
+        "blocked_reason": "STATE_REPLY on brake",
+        "culprit": "brake_server",
+        "culprit_priority": 20,
+        "start_us": 12700.0,
+        "end_us": 13100.0,
+        "duration_us": 400.0
+      },
+      {
+        "blocked_thread": "pedal_sampler",
+        "blocked_priority": 50,
+        "blocked_reason": "STATE_REPLY on brake",
+        "culprit": "brake_server",
+        "culprit_priority": 20,
+        "start_us": 14200.0,
+        "end_us": 14600.0,
+        "duration_us": 400.0
+      },
+      {
+        "blocked_thread": "pedal_sampler",
+        "blocked_priority": 50,
+        "blocked_reason": "STATE_REPLY on brake",
+        "culprit": "brake_server",
+        "culprit_priority": 20,
+        "start_us": 16200.0,
+        "end_us": 16600.0,
+        "duration_us": 400.0
+      },
+      {
+        "blocked_thread": "pedal_sampler",
+        "blocked_priority": 50,
+        "blocked_reason": "STATE_REPLY on brake",
+        "culprit": "brake_server",
+        "culprit_priority": 20,
+        "start_us": 18200.0,
+        "end_us": 18600.0,
+        "duration_us": 400.0
+      }
+    ],
+    "partition_usage": [],
+    "timing_evidence": {
+      "purpose": "Structured timing evidence for an ISO 26262 / IEC 62304 / DO-178C style safety case. This is engineering evidence, NOT a certification artifact or a claim of compliance.",
+      "tool": "Chronoscope for QNX 8.0 (host-based determinism workbench)",
+      "qnx_version": "8.0",
+      "trace_source": "simulated",
+      "trace_tool": "Chronoscope simulator",
+      "scheduling_model": "QNX Neutrino: 256 priority levels, message-driven priority inheritance, SCHED_FIFO/RR/SPORADIC, adaptive partitioning",
+      "wcet_and_jitter_per_thread": [
+        {
+          "thread": "brake_server",
+          "priority": 20,
+          "jobs": 0,
+          "misses": 0,
+          "min_us": null,
+          "mean_us": null,
+          "wcet_us": null,
+          "jitter_us": 0.0,
+          "cpu_us": 4000.0
+        },
+        {
+          "thread": "diag_logger",
+          "priority": 30,
+          "jobs": 2,
+          "misses": 0,
+          "min_us": 1900.0,
+          "mean_us": 1900.0,
+          "wcet_us": 1900.0,
+          "jitter_us": 0.0,
+          "cpu_us": 3600.0
+        },
+        {
+          "thread": "pedal_sampler",
+          "priority": 50,
+          "jobs": 10,
+          "misses": 2,
+          "min_us": 700.0,
+          "mean_us": 1077.0,
+          "wcet_us": 2500.0,
+          "jitter_us": 1800.0,
+          "cpu_us": 3000.0
+        },
+        {
+          "thread": "wheel_speed_ist",
+          "priority": 60,
+          "jobs": 3,
+          "misses": 0,
+          "min_us": 150.0,
+          "mean_us": 150.0,
+          "wcet_us": 150.0,
+          "jitter_us": 0.0,
+          "cpu_us": 450.0
+        }
+      ],
+      "deadline_miss_count": 2,
+      "worst_case_response_us": 2500.0,
+      "max_priority_inversion_us": 1800.0,
+      "max_isr_to_ist_us": 20.0,
+      "cpu_utilization_pct": 55.25,
+      "priority_assignment": {
+        "brake_server": 20,
+        "diag_logger": 30,
+        "pedal_sampler": 50,
+        "wheel_speed_ist": 60
+      },
+      "partition_budget_consumption": [],
+      "reproducibility": "Deterministic discrete-event replay; re-run `chronoscope simulate MODEL` to reproduce exactly."
+    },
+    "anomalies": [
+      {
+        "thread": "pedal_sampler",
+        "index": 0,
+        "kind": "latency_spike",
+        "value_us": 2500.0,
+        "score": 2571.43,
+        "explanation": "robust z=2571.43 (median=700.0us, MAD-sigma=0.700us); response time is 3.6x baseline"
+      },
+      {
+        "thread": "pedal_sampler",
+        "index": 6,
+        "kind": "latency_spike",
+        "value_us": 870.0,
+        "score": 242.86,
+        "explanation": "robust z=242.86 (median=700.0us, MAD-sigma=0.700us); response time is 1.2x baseline"
+      },
+      {
+        "thread": "pedal_sampler",
+        "index": 8,
+        "kind": "latency_spike",
+        "value_us": 2500.0,
+        "score": 2571.43,
+        "explanation": "robust z=2571.43 (median=700.0us, MAD-sigma=0.700us); response time is 3.6x baseline"
+      }
+    ]
+  },
+  "fixed": {
+    "verdict": "DETERMINISTIC",
+    "score": 100.0,
+    "kpis": {
+      "total_jobs": 15,
+      "completed_jobs": 15,
+      "deadline_misses": 0,
+      "miss_rate_pct": 0.0,
+      "worst_case_response_us": 3100.0,
+      "max_lateness_us": 0.0,
+      "max_jitter_us": 170.0,
+      "cpu_utilization_pct": 55.25,
+      "priority_inversion_episodes": 0,
+      "max_priority_inversion_us": 0.0,
+      "message_driven_priority_boosts": 1,
+      "msg_send_transactions": 10,
+      "msg_reply_transactions": 10,
+      "rr_quantum_expiries": 0,
+      "sporadic_budget_drops": 0,
+      "aps_bankruptcies": 0,
+      "isr_count": 3,
+      "max_isr_to_ist_us": 20.0,
+      "horizon_us": 20000.0,
+      "cpus": 1,
+      "trace_source": "simulated"
+    },
+    "findings": [
+      {
+        "severity": "MEDIUM",
+        "code": "TIMING_ANOMALY",
+        "title": "latency_spike on pedal_sampler (job #6, 870.0 us)",
+        "detail": "robust z=242.86 (median=700.0us, MAD-sigma=0.700us); response time is 1.2x baseline",
+        "evidence": "chronoscope/anomaly.py:detect_anomalies() robust z-score / CUSUM",
+        "recommendation": "Compare with a traceprinter dump from the QNX 8.0 target using `chronoscope reconcile`.",
+        "qnx_reference": "System Analysis Toolkit User's Guide > Events and the Kernel"
+      },
+      {
+        "severity": "LOW",
+        "code": "ISR_TO_IST_LATENCY",
+        "title": "Maximum ISR-to-IST latency 20 us",
+        "detail": "Interrupt stubs are non-preemptible on this model; the IST is released after the stub and any higher-priority in-kernel ISTs.",
+        "evidence": "trace.events[kind='interrupt_entry'|'job_release']",
+        "recommendation": "Keep the ISR stub minimal; do the work in the IST (QNX InterruptAttachEvent / SIGEV_INTR).",
+        "qnx_reference": "Programmer's Guide > Handling Hardware Interrupts"
+      },
+      {
+        "severity": "INFO",
+        "code": "MESSAGE_PI_ACTIVE",
+        "title": "QNX message-driven priority inheritance fired 1 time(s)",
+        "detail": "Servers were boosted to the priority of their highest-priority client at send time, preventing inversion.",
+        "evidence": "trace.events[kind='priority_boost']; chronoscope/kernel.py:_boost()",
+        "recommendation": "No action. Preserve this behaviour in the QNX build (do not set _NTO_CHF_FIXED_PRIORITY for safety-critical channels).",
+        "qnx_reference": "System Architecture > Priority inheritance and messages"
+      },
+      {
+        "severity": "INFO",
+        "code": "DEADLINES_MET",
+        "title": "All modelled jobs meet their deadlines",
+        "detail": "15 jobs completed; worst-case response 3100 us, max jitter 170 us.",
+        "evidence": "trace.jobs[]; chronoscope/audit.py:audit()",
+        "recommendation": "Validate against a real QNX 8.0 target with `chronoscope reconcile` before freezing WCET assumptions.",
+        "qnx_reference": "System Analysis Toolkit User's Guide"
+      }
+    ],
+    "per_thread": [
+      {
+        "thread": "brake_server",
+        "priority": 20,
+        "jobs": 0,
+        "misses": 0,
+        "min_us": null,
+        "mean_us": null,
+        "wcet_us": null,
+        "jitter_us": 0.0,
+        "cpu_us": 4000.0
+      },
+      {
+        "thread": "diag_logger",
+        "priority": 30,
+        "jobs": 2,
+        "misses": 0,
+        "min_us": 3100.0,
+        "mean_us": 3100.0,
+        "wcet_us": 3100.0,
+        "jitter_us": 0.0,
+        "cpu_us": 3600.0
+      },
+      {
+        "thread": "pedal_sampler",
+        "priority": 50,
+        "jobs": 10,
+        "misses": 0,
+        "min_us": 700.0,
+        "mean_us": 717.0,
+        "wcet_us": 870.0,
+        "jitter_us": 170.0,
+        "cpu_us": 3000.0
+      },
+      {
+        "thread": "wheel_speed_ist",
+        "priority": 60,
+        "jobs": 3,
+        "misses": 0,
+        "min_us": 150.0,
+        "mean_us": 150.0,
+        "wcet_us": 150.0,
+        "jitter_us": 0.0,
+        "cpu_us": 450.0
+      }
+    ],
+    "inversions": [],
+    "partition_usage": [],
+    "timing_evidence": {
+      "purpose": "Structured timing evidence for an ISO 26262 / IEC 62304 / DO-178C style safety case. This is engineering evidence, NOT a certification artifact or a claim of compliance.",
+      "tool": "Chronoscope for QNX 8.0 (host-based determinism workbench)",
+      "qnx_version": "8.0",
+      "trace_source": "simulated",
+      "trace_tool": "Chronoscope simulator",
+      "scheduling_model": "QNX Neutrino: 256 priority levels, message-driven priority inheritance, SCHED_FIFO/RR/SPORADIC, adaptive partitioning",
+      "wcet_and_jitter_per_thread": [
+        {
+          "thread": "brake_server",
+          "priority": 20,
+          "jobs": 0,
+          "misses": 0,
+          "min_us": null,
+          "mean_us": null,
+          "wcet_us": null,
+          "jitter_us": 0.0,
+          "cpu_us": 4000.0
+        },
+        {
+          "thread": "diag_logger",
+          "priority": 30,
+          "jobs": 2,
+          "misses": 0,
+          "min_us": 3100.0,
+          "mean_us": 3100.0,
+          "wcet_us": 3100.0,
+          "jitter_us": 0.0,
+          "cpu_us": 3600.0
+        },
+        {
+          "thread": "pedal_sampler",
+          "priority": 50,
+          "jobs": 10,
+          "misses": 0,
+          "min_us": 700.0,
+          "mean_us": 717.0,
+          "wcet_us": 870.0,
+          "jitter_us": 170.0,
+          "cpu_us": 3000.0
+        },
+        {
+          "thread": "wheel_speed_ist",
+          "priority": 60,
+          "jobs": 3,
+          "misses": 0,
+          "min_us": 150.0,
+          "mean_us": 150.0,
+          "wcet_us": 150.0,
+          "jitter_us": 0.0,
+          "cpu_us": 450.0
+        }
+      ],
+      "deadline_miss_count": 0,
+      "worst_case_response_us": 3100.0,
+      "max_priority_inversion_us": 0.0,
+      "max_isr_to_ist_us": 20.0,
+      "cpu_utilization_pct": 55.25,
+      "priority_assignment": {
+        "brake_server": 20,
+        "diag_logger": 30,
+        "pedal_sampler": 50,
+        "wheel_speed_ist": 60
+      },
+      "partition_budget_consumption": [],
+      "reproducibility": "Deterministic discrete-event replay; re-run `chronoscope simulate MODEL` to reproduce exactly."
+    },
+    "anomalies": [
+      {
+        "thread": "pedal_sampler",
+        "index": 6,
+        "kind": "latency_spike",
+        "value_us": 870.0,
+        "score": 242.86,
+        "explanation": "robust z=242.86 (median=700.0us, MAD-sigma=0.700us); response time is 1.2x baseline"
+      }
+    ]
+  },
+  "proof": {
+    "method": "Bounded greedy search over QNX-semantically-valid configuration patches; every candidate re-simulated on the same deterministic Neutrino scheduler and re-audited.",
+    "deterministic": true,
+    "candidates_evaluated": 18,
+    "patches_applied": 1,
+    "before": {
+      "verdict": "NON-DETERMINISTIC",
+      "score": 57.0,
+      "deadline_misses": 2,
+      "max_lateness_us": 1300.0,
+      "priority_inversions": 12,
+      "max_inversion_us": 1800.0,
+      "worst_case_response_us": 2500.0
+    },
+    "after": {
+      "verdict": "DETERMINISTIC",
+      "score": 100.0,
+      "deadline_misses": 0,
+      "max_lateness_us": 0.0,
+      "priority_inversions": 0,
+      "max_inversion_us": 0.0,
+      "worst_case_response_us": 3100.0
+    },
+    "claim": "Counterfactually verified: the patched model completes every job within its deadline on the same workload."
+  },
+  "runtime_s": 0.021
+}

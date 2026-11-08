@@ -1,0 +1,56 @@
+# Chronoscope for QNX 8.0 -- minimal hello-world system
+# A 2 ms control loop, a 5 ms telemetry task, and a message-passing server.
+[system]
+name = "hello-qnx"
+description = "Two periodic threads and a QNX native message-passing server"
+horizon_us = 12000
+cpus = 1
+tick_us = 1000
+rr_quantum_us = 4000
+unprivileged_ceiling = 63
+aps_enabled = false
+
+[[partitions]]
+name = "system"
+budget_pct = 100.0
+
+[[channels]]
+name = "actuator"
+server = "actuator_server"
+fixed_priority = false
+
+[[threads]]
+name = "control"
+priority = 40
+policy = "FIFO"
+role = "worker"
+partition = "system"
+jobs = [
+    { name = "cycle", period_us = 2000, offset_us = 0, deadline_us = 1800, steps = [
+        { op = "compute", us = 200 },
+        { op = "send", channel = "actuator", service_us = 300 },
+    ] },
+]
+
+[[threads]]
+name = "telemetry"
+priority = 12
+policy = "RR"
+role = "worker"
+partition = "system"
+jobs = [
+    { name = "report", period_us = 5000, offset_us = 100, deadline_us = 4500, steps = [
+        { op = "compute", us = 500 },
+    ] },
+]
+
+[[threads]]
+name = "actuator_server"
+priority = 20
+policy = "FIFO"
+role = "server"
+partition = "system"
+channel = "actuator"
+service_us = 300
+ability_priority = false
+jobs = []

@@ -1,0 +1,177 @@
+{
+  "verdict": "NON-DETERMINISTIC",
+  "score": 65.5,
+  "kpis": {
+    "total_jobs": 20,
+    "completed_jobs": 20,
+    "deadline_misses": 3,
+    "miss_rate_pct": 15.0,
+    "worst_case_response_us": 2400.0,
+    "max_lateness_us": 1000.0,
+    "max_jitter_us": 1500.0,
+    "cpu_utilization_pct": 77.5,
+    "priority_inversion_episodes": 0,
+    "max_priority_inversion_us": 0.0,
+    "message_driven_priority_boosts": 0,
+    "msg_send_transactions": 0,
+    "msg_reply_transactions": 0,
+    "rr_quantum_expiries": 0,
+    "sporadic_budget_drops": 3,
+    "aps_bankruptcies": 0,
+    "isr_count": 0,
+    "max_isr_to_ist_us": 0.0,
+    "horizon_us": 16000.0,
+    "cpus": 1,
+    "trace_source": "simulated"
+  },
+  "findings": [
+    {
+      "severity": "CRITICAL",
+      "code": "DEADLINE_MISS",
+      "title": "3 of 20 jobs miss their deadline",
+      "detail": "Worst lateness 1000 us; affected threads: event_handler (3). Worst-case response time 2400 us.",
+      "evidence": "trace.jobs[].response_us / status; chronoscope/audit.py:audit()",
+      "recommendation": "Run `chronoscope fix` to derive a counterfactually verified priority/inheritance/partition configuration, then re-audit.",
+      "qnx_reference": "System Architecture > What is Real Time and Why Do I Need It?"
+    },
+    {
+      "severity": "MEDIUM",
+      "code": "SPORADIC_BUDGET",
+      "title": "SCHED_SPORADIC budget exhausted 3 time(s)",
+      "detail": "The thread dropped to its low priority until replenishment, which can turn a bounded response into a missed deadline.",
+      "evidence": "trace.events[kind='sporadic_drop']; chronoscope/kernel.py:_advance()",
+      "recommendation": "Increase initial budget or reduce replenishment period.",
+      "qnx_reference": "System Architecture > Scheduling policies"
+    },
+    {
+      "severity": "MEDIUM",
+      "code": "TIMING_ANOMALY",
+      "title": "latency_spike on event_handler (job #3, 700.0 us)",
+      "detail": "robust z=750.00 (median=400.0us, MAD-sigma=0.400us); response time is 1.8x baseline",
+      "evidence": "chronoscope/anomaly.py:detect_anomalies() robust z-score / CUSUM",
+      "recommendation": "Compare with a traceprinter dump from the QNX 8.0 target using `chronoscope reconcile`.",
+      "qnx_reference": "System Analysis Toolkit User's Guide > Events and the Kernel"
+    },
+    {
+      "severity": "MEDIUM",
+      "code": "TIMING_ANOMALY",
+      "title": "latency_spike on event_handler (job #5, 1500.0 us)",
+      "detail": "robust z=2750.00 (median=400.0us, MAD-sigma=0.400us); response time is 3.8x baseline",
+      "evidence": "chronoscope/anomaly.py:detect_anomalies() robust z-score / CUSUM",
+      "recommendation": "Compare with a traceprinter dump from the QNX 8.0 target using `chronoscope reconcile`.",
+      "qnx_reference": "System Analysis Toolkit User's Guide > Events and the Kernel"
+    },
+    {
+      "severity": "MEDIUM",
+      "code": "TIMING_ANOMALY",
+      "title": "latency_spike on event_handler (job #10, 1900.0 us)",
+      "detail": "robust z=3750.00 (median=400.0us, MAD-sigma=0.400us); response time is 4.8x baseline",
+      "evidence": "chronoscope/anomaly.py:detect_anomalies() robust z-score / CUSUM",
+      "recommendation": "Compare with a traceprinter dump from the QNX 8.0 target using `chronoscope reconcile`.",
+      "qnx_reference": "System Analysis Toolkit User's Guide > Events and the Kernel"
+    }
+  ],
+  "per_thread": [
+    {
+      "thread": "background_sync",
+      "priority": 8,
+      "jobs": 4,
+      "misses": 0,
+      "min_us": 1500.0,
+      "mean_us": 1850.0,
+      "wcet_us": 2400.0,
+      "jitter_us": 900.0,
+      "cpu_us": 6000.0
+    },
+    {
+      "thread": "event_handler",
+      "priority": 35,
+      "jobs": 16,
+      "misses": 3,
+      "min_us": 400.0,
+      "mean_us": 675.0,
+      "wcet_us": 1900.0,
+      "jitter_us": 1500.0,
+      "cpu_us": 6400.0
+    }
+  ],
+  "inversions": [],
+  "partition_usage": [],
+  "timing_evidence": {
+    "purpose": "Structured timing evidence for an ISO 26262 / IEC 62304 / DO-178C style safety case. This is engineering evidence, NOT a certification artifact or a claim of compliance.",
+    "tool": "Chronoscope for QNX 8.0 (host-based determinism workbench)",
+    "qnx_version": "8.0",
+    "trace_source": "simulated",
+    "trace_tool": "Chronoscope simulator",
+    "scheduling_model": "QNX Neutrino: 256 priority levels, message-driven priority inheritance, SCHED_FIFO/RR/SPORADIC, adaptive partitioning",
+    "wcet_and_jitter_per_thread": [
+      {
+        "thread": "background_sync",
+        "priority": 8,
+        "jobs": 4,
+        "misses": 0,
+        "min_us": 1500.0,
+        "mean_us": 1850.0,
+        "wcet_us": 2400.0,
+        "jitter_us": 900.0,
+        "cpu_us": 6000.0
+      },
+      {
+        "thread": "event_handler",
+        "priority": 35,
+        "jobs": 16,
+        "misses": 3,
+        "min_us": 400.0,
+        "mean_us": 675.0,
+        "wcet_us": 1900.0,
+        "jitter_us": 1500.0,
+        "cpu_us": 6400.0
+      }
+    ],
+    "deadline_miss_count": 3,
+    "worst_case_response_us": 2400.0,
+    "max_priority_inversion_us": 0.0,
+    "max_isr_to_ist_us": 0.0,
+    "cpu_utilization_pct": 77.5,
+    "priority_assignment": {
+      "background_sync": 8,
+      "event_handler": 35
+    },
+    "partition_budget_consumption": [],
+    "reproducibility": "Deterministic discrete-event replay; re-run `chronoscope simulate MODEL` to reproduce exactly."
+  },
+  "anomalies": [
+    {
+      "thread": "event_handler",
+      "index": 3,
+      "kind": "latency_spike",
+      "value_us": 700.0,
+      "score": 750.0,
+      "explanation": "robust z=750.00 (median=400.0us, MAD-sigma=0.400us); response time is 1.8x baseline"
+    },
+    {
+      "thread": "event_handler",
+      "index": 5,
+      "kind": "latency_spike",
+      "value_us": 1500.0,
+      "score": 2750.0,
+      "explanation": "robust z=2750.00 (median=400.0us, MAD-sigma=0.400us); response time is 3.8x baseline"
+    },
+    {
+      "thread": "event_handler",
+      "index": 10,
+      "kind": "latency_spike",
+      "value_us": 1900.0,
+      "score": 3750.0,
+      "explanation": "robust z=3750.00 (median=400.0us, MAD-sigma=0.400us); response time is 4.8x baseline"
+    },
+    {
+      "thread": "event_handler",
+      "index": 15,
+      "kind": "latency_spike",
+      "value_us": 1900.0,
+      "score": 3750.0,
+      "explanation": "robust z=3750.00 (median=400.0us, MAD-sigma=0.400us); response time is 4.8x baseline"
+    }
+  ]
+}

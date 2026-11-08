@@ -1,0 +1,50 @@
+# Chronoscope for QNX 8.0 -- adaptive partitioning (APS) budget exhaustion
+#
+# QNX APS guarantees a minimum CPU percentage to each partition over an
+# averaging window. A safety partition budgeted at 30% that actually needs
+# ~45% goes "bankrupt" and is throttled until the window rolls over. This
+# model reproduces that so the audit can point at the exact window.
+# Docs: Adaptive Partitioning User's Guide > Bankruptcy / Critical threads.
+
+[system]
+name = "adaptive-partition"
+description = "QNX 8.0 APS: under-budgeted safety partition goes bankrupt"
+horizon_us = 24000
+cpus = 1
+tick_us = 1000
+rr_quantum_us = 4000
+unprivileged_ceiling = 63
+aps_enabled = true
+aps_window_us = 8000
+aps_free_time_by_ratio = true
+
+[[partitions]]
+name = "safety"
+budget_pct = 30.0
+critical_pct = 0.0
+
+[[partitions]]
+name = "hmi"
+budget_pct = 70.0
+critical_pct = 0.0
+
+[[threads]]
+name = "safety_loop"
+priority = 45
+policy = "FIFO"
+role = "worker"
+partition = "safety"
+critical_thread = false
+jobs = [
+    { name = "safety_cycle", period_us = 2000, offset_us = 0, deadline_us = 1900, steps = [ { op = "compute", us = 900 } ] },
+]
+
+[[threads]]
+name = "hmi_render"
+priority = 10
+policy = "RR"
+role = "worker"
+partition = "hmi"
+jobs = [
+    { name = "frame", period_us = 3000, offset_us = 200, deadline_us = 2800, steps = [ { op = "compute", us = 1200 } ] },
+]

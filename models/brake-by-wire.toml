@@ -1,0 +1,96 @@
+# Chronoscope for QNX 8.0 -- flagship scenario: brake-by-wire ECU
+#
+# A deliberately *broken* QNX 8.0 configuration that reproduces the classic
+# unbounded priority inversion from the QNX System Architecture guide
+# ("Priority inheritance and messages"):
+#
+#   pedal_sampler (prio 50) --MsgSend()--> brake_server (prio 20)
+#                                          ^ channel created with
+#                                            _NTO_CHF_FIXED_PRIORITY, so the
+#                                            server CANNOT inherit prio 50
+#   diag_logger   (prio 30) runs a long diagnostic burst in between, so the
+#                           high-priority client waits behind medium-priority
+#                           work and misses its 1.2 ms hard deadline.
+#
+# `chronoscope fix models/brake-by-wire.toml` derives and counterfactually
+# verifies the minimal QNX configuration change (remove the flag / grant the
+# ability / reassign priorities) that makes every deadline again.
+# Docs: https://www.qnx.com/developers/docs/8.0/
+
+[system]
+name = "brake-by-wire"
+description = "QNX 8.0 brake-by-wire ECU; seeded _NTO_CHF_FIXED_PRIORITY inversion"
+horizon_us = 20000
+cpus = 1
+tick_us = 1000
+rr_quantum_us = 4000
+unprivileged_ceiling = 63   # procnto -P (QNX 8.0 default)
+aps_enabled = false
+
+[[partitions]]
+name = "system"
+budget_pct = 100.0
+
+[[channels]]
+name = "brake"
+server = "brake_server"
+fixed_priority = true       # _NTO_CHF_FIXED_PRIORITY -- the seeded defect
+
+[[mutexes]]
+name = "brake_bus"
+protocol = "inherit"        # PTHREAD_PRIO_INHERIT
+
+[[threads]]
+name = "pedal_sampler"
+priority = 50
+policy = "FIFO"
+role = "worker"
+partition = "system"
+jobs = [
+    { name = "pedal_cycle", period_us = 2000, offset_us = 0, deadline_us = 1200, critical = true, steps = [
+          { op = "compute", us = 200 },
+          { op = "send", channel = "brake", service_us = 400 },
+          { op = "compute", us = 100 },
+      ] },
+]
+
+[[threads]]
+name = "brake_server"
+priority = 20
+policy = "FIFO"
+role = "server"
+partition = "system"
+channel = "brake"
+service_us = 400
+fixed_priority = true       # kept in sync with the channel flag
+ability_priority = false    # no PROCMGR_AID_PRIORITY
+jobs = []
+
+[[threads]]
+name = "diag_logger"
+priority = 30
+policy = "FIFO"
+role = "worker"
+partition = "system"
+jobs = [
+    { name = "diag_burst", period_us = 10000, offset_us = 100, deadline_us = 9000, steps = [ { op = "compute", us = 1800 } ] },
+]
+
+[[threads]]
+name = "wheel_speed_ist"
+priority = 60
+policy = "FIFO"
+role = "ist"
+partition = "system"
+jobs = []
+
+[[interrupts]]
+name = "wheel_tick"
+irq = 7
+period_us = 5000
+offset_us = 3500
+isr_us = 20                 # tiny ISR stub; work is done in the IST
+ist_thread = "wheel_speed_ist"
+ist_wcet_us = 150
+deadline_us = 800
+release_count = 3

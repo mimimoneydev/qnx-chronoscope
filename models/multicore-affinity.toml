@@ -1,0 +1,70 @@
+# Chronoscope for QNX 8.0 -- SMP dispatch and runmask/affinity
+#
+# Two CPUs, explicitly pinned control threads. Chronoscope models QNX SMP
+# runmasks (`ThreadCtl(_NTO_TCTL_RUNMASK, ...)`): a thread only ever runs on
+# the CPUs in its affinity list, and each CPU dispatches its own highest
+# priority READY thread. Docs: Programmer's Guide > Multicore Processing.
+
+[system]
+name = "multicore-affinity"
+description = "QNX 8.0 SMP: two CPUs with explicit runmask affinity"
+horizon_us = 18000
+cpus = 2
+tick_us = 1000
+rr_quantum_us = 4000
+unprivileged_ceiling = 63
+aps_enabled = false
+
+[[partitions]]
+name = "system"
+budget_pct = 100.0
+
+[[channels]]
+name = "fusion"
+server = "fusion_server"
+fixed_priority = false
+
+[[threads]]
+name = "radar_ist"
+priority = 52
+policy = "FIFO"
+role = "ist"
+partition = "system"
+affinity = [0]
+jobs = [
+    { name = "radar_frame", period_us = 2000, offset_us = 0, deadline_us = 1500, steps = [ { op = "compute", us = 400 }, { op = "send", channel = "fusion", service_us = 250 } ] },
+]
+
+[[threads]]
+name = "fusion_server"
+priority = 30
+policy = "FIFO"
+role = "server"
+partition = "system"
+channel = "fusion"
+service_us = 250
+affinity = [1]
+ability_priority = false
+jobs = []
+
+[[threads]]
+name = "sensor_logger"
+priority = 9
+policy = "RR"
+role = "worker"
+partition = "system"
+affinity = [1]
+jobs = [
+    { name = "log", period_us = 5000, offset_us = 400, deadline_us = 4500, steps = [ { op = "compute", us = 800 } ] },
+]
+
+[[threads]]
+name = "camera_ist"
+priority = 48
+policy = "FIFO"
+role = "ist"
+partition = "system"
+affinity = [0]
+jobs = [
+    { name = "camera_frame", period_us = 4000, offset_us = 600, deadline_us = 3000, steps = [ { op = "compute", us = 500 } ] },
+]

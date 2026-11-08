@@ -1,0 +1,44 @@
+# Chronoscope for QNX 8.0 -- SCHED_SPORADIC budget enforcement
+#
+# A sporadic server thread is allowed a fixed execution budget per
+# replenishment period; once exhausted it drops to its low priority. A
+# best-effort task that emits work faster than the budget replenishes will
+# therefore show `sporadic_drop` events and unbounded response times.
+# Docs: System Architecture > Scheduling policies (SCHED_SPORADIC).
+
+[system]
+name = "sporadic-server"
+description = "QNX 8.0 SCHED_SPORADIC: budget exhaustion drops the thread to low priority"
+horizon_us = 16000
+cpus = 1
+tick_us = 1000
+rr_quantum_us = 4000
+unprivileged_ceiling = 63
+aps_enabled = false
+
+[[partitions]]
+name = "system"
+budget_pct = 100.0
+
+[[threads]]
+name = "event_handler"
+priority = 35
+policy = "SPORADIC"
+role = "worker"
+partition = "system"
+sporadic_budget_us = 700
+sporadic_period_us = 4000
+sporadic_low_priority = 4
+jobs = [
+    { name = "event", period_us = 1000, offset_us = 0, deadline_us = 900, steps = [ { op = "compute", us = 400 } ] },
+]
+
+[[threads]]
+name = "background_sync"
+priority = 8
+policy = "RR"
+role = "worker"
+partition = "system"
+jobs = [
+    { name = "sync", period_us = 4000, offset_us = 300, deadline_us = 3500, steps = [ { op = "compute", us = 1500 } ] },
+]

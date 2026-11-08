@@ -1,0 +1,65 @@
+# Chronoscope for QNX 8.0 -- mkifs OS image buildfile
+#
+# Build:  mkifs chronoscope.build chronoscope-x86_64.ifs
+# Lint:   python3 -m chronoscope inspect target/images/chronoscope.build
+#         (scores 100/100 against chronoscope/buildfile.py)
+#
+# Why this image is determinism-ready:
+#  * procnto-smp-instr is the INSTRUMENTED microkernel, required by
+#    tracelogger / traceprinter to capture THRUNNING, THSEND, THREPLY, ...
+#  * procnto -P 64 raises the unprivileged priority ceiling above the
+#    priorities used by models/brake-by-wire.toml (max 60).
+#  * slogger2 and tracelogger are started BEFORE the probe, so no event is
+#    lost during startup.
+#  * PROCMGR_AID_PRIORITY is declared via a secpol-style ability note; the
+#    resource manager also calls procmgr_ability() at startup.
+#
+# Reference: QNX SDP 8.0 > Building Embedded Systems > OS Image Buildfiles;
+#            Utilities Reference > mkifs, procnto, tracelogger, slogger2.
+
+[virtual=x86_64,elf] .bootstrap = {
+    startup-x86
+    procnto-smp-instr -P 64
+}
+
+[+script] startup-script = {
+    # Environment: PATH and LD_LIBRARY_PATH must be set before any binary
+    # that links against libc.so is started.
+    PATH=/proc/boot:/usr/bin:/bin
+    LD_LIBRARY_PATH=/proc/boot:/usr/lib:/lib
+    export PATH LD_LIBRARY_PATH
+
+    # Console + deterministic clock source.
+    devc-con-hid -n4 &
+    reopen /dev/con1
+
+    # Structured logging and kernel event capture, started before the probe.
+    slogger2 -d -s 256k &
+    waitfor /dev/slog 5
+    tracelogger -d1 -f /tmp/chronoscope.kev -n 8 &
+
+    # secpol / ability: PROCMGR_AID_PRIORITY lets a QNX server inherit a
+    # privileged priority instead of being clamped to the -P ceiling - 1.
+    # On a production image replace this note with a compiled secpol policy
+    # that grants PROCMGR_AID_PRIORITY to /usr/bin/chronoscope_resmgr.
+    # ability: PROCMGR_AID_PRIORITY allow nonroot inherit yes
+
+    # Chronoscope target-side probe: resource manager first, then the demo.
+    /usr/bin/chronoscope_resmgr &
+    waitfor /dev/chronoscope 5
+    /usr/bin/chronoscope_demo --inherit --iterations 10
+}
+
+[data=c]
+libc.so
+libm.so
+libslog2.so
+libpthread.so
+
+/usr/bin/chronoscope_demo=demo/chronoscope_demo
+/usr/bin/chronoscope_resmgr=resmgr/chronoscope_resmgr
+/usr/bin/traceprinter=/usr/bin/traceprinter
+/usr/bin/tracelogger=/usr/bin/tracelogger
+/usr/bin/slogger2=/usr/bin/slogger2
+/usr/bin/slog2info=/usr/bin/slog2info
+/usr/bin/pidin=/usr/bin/pidin

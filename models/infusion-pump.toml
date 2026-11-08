@@ -1,0 +1,57 @@
+# Chronoscope for QNX 8.0 -- mutex priority inheritance (IEC 62304 narrative)
+#
+# A low-priority audit writer holds the shared dose bus mutex while the
+# high-priority dose controller waits on it. With PTHREAD_PRIO_INHERIT the
+# QNX kernel temporarily raises the mutex owner to the waiter's priority,
+# bounding the blocking time. Setting protocol = "none" in this file
+# reproduces the unbounded inversion instead.
+# Docs: System Architecture > Priority inheritance and mutexes.
+
+[system]
+name = "infusion-pump"
+description = "QNX 8.0 medical infusion pump: PTHREAD_PRIO_INHERIT on the dose bus"
+horizon_us = 18000
+cpus = 1
+tick_us = 1000
+rr_quantum_us = 4000
+unprivileged_ceiling = 63
+aps_enabled = false
+
+[[partitions]]
+name = "system"
+budget_pct = 100.0
+
+[[mutexes]]
+name = "dose_bus"
+protocol = "inherit"
+ceiling = 0
+
+[[threads]]
+name = "dose_controller"
+priority = 48
+policy = "FIFO"
+role = "worker"
+partition = "system"
+jobs = [
+    { name = "dose_cycle", period_us = 3000, offset_us = 0, deadline_us = 2200, steps = [ { op = "compute", us = 200 }, { op = "lock", mutex = "dose_bus" }, { op = "compute", us = 400 }, { op = "unlock", mutex = "dose_bus" }, { op = "compute", us = 100 } ] },
+]
+
+[[threads]]
+name = "audit_writer"
+priority = 12
+policy = "RR"
+role = "worker"
+partition = "system"
+jobs = [
+    { name = "audit_record", period_us = 6000, offset_us = 100, deadline_us = 5000, steps = [ { op = "lock", mutex = "dose_bus" }, { op = "compute", us = 700 }, { op = "unlock", mutex = "dose_bus" } ] },
+]
+
+[[threads]]
+name = "alarm_monitor"
+priority = 55
+policy = "FIFO"
+role = "worker"
+partition = "system"
+jobs = [
+    { name = "alarm_check", period_us = 5000, offset_us = 2500, deadline_us = 3000, steps = [ { op = "compute", us = 300 } ] },
+]
