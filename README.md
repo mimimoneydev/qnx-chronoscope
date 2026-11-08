@@ -4,9 +4,11 @@
 > A host-based determinism workbench for QNX Neutrino 8.0 real-time systems.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![CI](https://github.com/mimimoneydev/qnx-chronoscope/actions/workflows/ci.yml/badge.svg)](https://github.com/mimimoneydev/qnx-chronoscope/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/Python-3.11%2B-blue)
 ![QNX](https://img.shields.io/badge/QNX-SDP%208.0-orange)
 ![Category](https://img.shields.io/badge/Devpost-Developer%20Tooling%20%26%20Host%20Tools-green)
+[![Codelab](https://img.shields.io/badge/Codelab-11%20steps-blue)](https://mimimoneydev.github.io/qnx-chronoscope/)
 
 **Devpost category:** Developer Tooling & Host Tools
 **Repository:** <https://github.com/mimimoneydev/qnx-chronoscope>

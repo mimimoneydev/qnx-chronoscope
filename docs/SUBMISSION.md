@@ -32,9 +32,9 @@ is no pre-existing repository, fork or upstream project.
 | 2 | Eligible as "a host-based tool running on Windows, macOS, or Linux that builds, tests, analyzes, or otherwise supports software targeting QNX 8.0" | `README.md` positioning; importers, buildfile linter, `qcc` build scripts | PASS |
 | 3 | "capable of being successfully installed and running consistently" | `python3 -m chronoscope verify` (69 tests) + six runnable models + `demo/` artifacts | PASS |
 | 4 | "function as depicted in the video" | `demo/` HTML reports are the same files shown in the video | PASS |
-| 5 | "Provide a URL to your public code repository" | `https://github.com/mimimoneydev/qnx-chronoscope` | PASS (verify after push) |
+| 5 | "Provide a URL to your public code repository" | `https://github.com/mimimoneydev/qnx-chronoscope` | PASS — verified PUBLIC 8 Nov 2026 |
 | 6 | "repository must contain all necessary source code, assets, and instructions" | `README.md`, `docs/`, `codelab/`, `target/README.md`, `demo/`, `examples/traces/`, `.github/workflows/ci.yml` | PASS |
-| 7 | "public and open source by including an open source license file… detectable and visible at the top of the repository page (in the About section)" | [`LICENSE`](../LICENSE) (MIT) at repo root; set the GitHub "About" description + license | PASS + 1 manual step |
+| 7 | "public and open source by including an open source license file… detectable and visible at the top of the repository page (in the About section)" | [`LICENSE`](../LICENSE) (MIT) at repo root; GitHub detects `licenseInfo: mit`; About description, homepage and 16 topics set | PASS — verified 8 Nov 2026 |
 | 8 | "Evidence of QNX use… explain how the project uses or supports QNX… identify the relevant files, functions, output, or demonstration" | Dedicated section below + `README.md > Evidence of QNX use` + `target/README.md` API map | PASS |
 | 9 | "The repository must show that the project genuinely builds for or runs on QNX 8.0, not merely that QNX 8.0 is named in the README" | `target/Makefile`, `common.mk`, `images/chronoscope.build`, QNX-only C APIs, `scripts/build-target.sh`, `traceprinter` importer | PASS |
 | 10 | "Include build and run instructions specifying the QNX version, the target (hardware or QEMU), and the toolchain used" | `README.md > Build & run instructions`; block below | PASS |
@@ -42,7 +42,7 @@ is no pre-existing repository, fork or upstream project.
 | 12 | "Include a demonstration video… less than three (3) minutes… footage that shows the Project functioning on the device for which it was built" | `demo/chronoscope-demo.mp4` (< 3 min) showing the host tool on macOS plus the QNX 8.0 target-side workflow | PASS (file) |
 | 13 | Video "must be uploaded to and made publicly visible on YouTube and a link… provided on the submission form" | **MANUAL:** upload `demo/chronoscope-demo.mp4`, paste the URL | ACTION REQUIRED |
 | 14 | Video "must not include third party trademarks, or copyrighted music" | Original slides, original narration, no third-party assets; QNX wordmark only as plain text reference | PASS |
-| 15 | "Provide the URL of your codelab or tutorial in the designated field" | `https://mimimoneydev.github.io/qnx-chronoscope/` (source `codelab/README.md`, generator `codelab/build.py`) | PASS (verify Pages is live) |
+| 15 | "Provide the URL of your codelab or tutorial in the designated field" | `https://mimimoneydev.github.io/qnx-chronoscope/` (source `codelab/README.md`, generator `codelab/build.py`) | PASS — Pages built, HTTP 200 verified 8 Nov 2026 |
 | 16 | Codelab "authored during the Submission Period that teaches the reader how to perform a task on or for QNX 8.0" | 11-step codelab, ~40 min, header states November 2026; teaches QNX 8.0 priority inversion diagnosis, `tracelogger` capture, `mkifs` configuration | PASS |
 | 17 | "All Submission materials must be in English" | All docs, codelab, video narration and on-screen text are English | PASS |
 | 18 | "Select the one (1) category you are submitting to" | Developer Tooling & Host Tools | PASS |
@@ -59,11 +59,17 @@ is no pre-existing repository, fork or upstream project.
 | 29 | "The codelab is not required to relate to the Entrant's Project" | Our codelab **does** relate, which is allowed and strengthens the entry | PASS |
 | 30 | Best use of QNX-specific Technologies: "native message passing, resource managers, microkernel architecture, startup and boot customization, real-time services, and security policies" | All six named capabilities are present — see the evidence block | PASS |
 
-**Human-account steps (cannot be automated here):** (1) upload the MP4 to a
-public YouTube link, (2) fill in and press *Submit* on Devpost. **Verified by
-the entrant after push:** repository is public, MIT licence visible in the
-GitHub *About* section, GitHub Pages URL returns 200, CI is green. Everything
-else — code, docs, codelab, video, reports, tests — is already in the repo.
+**Verified live on 8 Nov 2026 after push:** repository is PUBLIC, GitHub
+detects the MIT licence and shows the description/homepage/topics in *About*,
+`https://mimimoneydev.github.io/qnx-chronoscope/` returns HTTP 200 with the
+full 11-step codelab, and GitHub Actions CI is green across all six jobs
+(Python 3.11/3.12/3.13 on Linux, 3.13 on macOS and Windows, plus the
+generated-artifact determinism gate).
+
+**Two human-account steps remain (cannot be automated here):** (1) upload
+`demo/chronoscope-demo.mp4` to a public YouTube link, (2) fill in and press
+*Submit* on Devpost. Everything else — code, docs, codelab, video, reports,
+tests, CI, Pages — is already committed, public and verified.
 
 ---
 
@@ -292,23 +298,23 @@ fits "Developer Tooling & Host Tools", and applies QNX 8.0 APIs/SDKs throughout.
 
 ## 7. Final pre-submit checklist
 
-- [ ] `git push` complete; repository is **public** and the MIT license shows
-      in the GitHub "About" section (add the description/tags there).
-- [ ] `https://mimimoneydev.github.io/qnx-chronoscope/` returns 200 (Settings →
-      Pages → Deploy from branch `main`, folder `/docs`). Fallback codelab URL
-      if Pages is not live:
+- [x] `git push` complete; repository is **PUBLIC**, GitHub detects the MIT
+      licence, and the *About* section has the description, homepage and 16 topics.
+- [x] `https://mimimoneydev.github.io/qnx-chronoscope/` returns **HTTP 200**
+      (Pages → Deploy from branch `main`, folder `/docs`; build status `built`).
+      Fallback codelab URL if Pages ever goes down:
       `https://github.com/mimimoneydev/qnx-chronoscope/blob/main/codelab/README.md`.
-- [ ] GitHub Actions CI is green (`.github/workflows/ci.yml`).
+- [x] GitHub Actions CI is green — run `42516376104`, 6/6 jobs pass (see §10).
 - [ ] Upload `demo/chronoscope-demo.mp4` to YouTube, set visibility **Public**,
       add the title/description from `demo/VIDEO.md`, paste the URL into the
-      Devpost video field.
+      Devpost video field. **← only remaining blocker before submission**
 - [x] Video verified under 3 minutes: `00:02:07.78`, H.264 1920×1080 30 fps +
       AAC, original narration, no third-party assets (see §9).
-- [ ] Paste description, evidence, build/run blocks into Devpost.
+- [x] Re-ran `python3 -m chronoscope verify` and `python3 -m chronoscope demo`
+      after publishing; 69/69 tests pass, zero regeneration drift (see §10).
+- [ ] Paste description, evidence, build/run blocks into Devpost (§2, §3, §4).
 - [ ] Select category **Developer Tooling & Host Tools**.
-- [ ] Fill the codelab URL field.
-- [ ] Re-run `python3 -m chronoscope verify` and `python3 -m chronoscope demo`
-      one final time; confirm `demo/proof.html` matches the video.
+- [ ] Fill the codelab URL field with the live Pages URL.
 - [ ] Submit before **December 15, 2026, 2:00 pm ET**. No edits after the
       deadline (except Devpost-permitted fixes for third-party marks/PII).
 
@@ -387,3 +393,84 @@ Audio: aac (LC), 44100 Hz, mono
 patch (`channel: brake.fixed_priority True -> False`), taking the system from
 57.0/100, 2 deadline misses, 12 inversions to 100.0/100, 0 misses, 0
 inversions. The same numbers appear in `demo/proof.html` and in the video.
+
+---
+
+## 10. Post-publish verification — live URLs and CI, 8 Nov 2026
+
+Everything below was executed after `git push origin main` (commit `5bfd3cc`).
+
+```
+$ gh repo view mimimoneydev/qnx-chronoscope \
+    --json name,visibility,url,description,homepageUrl,licenseInfo,defaultBranchRef
+{"defaultBranchRef":{"name":"main"},
+ "description":"Prove exactly when your code runs — a host-based determinism workbench
+                for QNX Neutrino 8.0 (QNX Global Hackathon 2026, Developer Tooling & Host Tools)",
+ "homepageUrl":"https://mimimoneydev.github.io/qnx-chronoscope/",
+ "licenseInfo":{"key":"mit","name":"MIT License"},
+ "name":"qnx-chronoscope","url":"https://github.com/mimimoneydev/qnx-chronoscope",
+ "visibility":"PUBLIC"}
+
+$ gh api -X PUT repos/mimimoneydev/qnx-chronoscope/topics
+16 topics: qnx, qnx-8, qnx-everywhere, rtos, real-time, determinism,
+priority-inversion, traceprinter, embedded, automotive, developer-tools,
+devpost, hackathon, python, mkifs, scheduling
+
+$ gh api -X POST repos/mimimoneydev/qnx-chronoscope/pages \
+    --input {"source":{"branch":"main","path":"/docs"}}
+{"html_url":"https://mimimoneydev.github.io/qnx-chronoscope/",
+ "source":{"branch":"main","path":"/docs"},"public":true,"https_enforced":true}
+
+$ gh api repos/mimimoneydev/qnx-chronoscope/pages
+{"status":"built", ...}
+
+$ gh api repos/mimimoneydev/qnx-chronoscope/pages/builds
+{"status":"built","error":null,"updated_at":"2026-11-08T19:42:57Z"}
+
+$ curl -sSIL https://mimimoneydev.github.io/qnx-chronoscope/
+HTTP/2 200
+content-type: text/html; charset=utf-8
+content-length: 40071          # identical to committed docs/index.html
+<title>Find and fix a priority inversion on QNX 8.0 | QNX 8.0 Codelab</title>
+
+$ gh run view 42516376104 --repo mimimoneydev/qnx-chronoscope
+✓ main CI · 42516376104   (completed / success)
+  ✓ Python 3.13 on ubuntu-latest
+  ✓ Python 3.12 on ubuntu-latest
+  ✓ Python 3.13 on windows-latest
+  ✓ Generated artifacts are deterministic
+  ✓ Python 3.13 on macos-latest
+  ✓ Python 3.11 on ubuntu-latest
+  ARTIFACTS: chronoscope-timing-evidence
+
+$ python3 -m unittest discover -s tests
+Ran 69 tests in 9.869s — OK
+
+$ python3 -m chronoscope verify
+Self-verification: 69 tests, 0 failures, 0 errors
+
+$ python3 examples/traces/generate.py && python3 codelab/build.py
+$ git diff --exit-code -- examples/traces codelab/README.md docs/index.html
+no drift                       # generated artifacts are reproducible
+
+$ ffmpeg -i demo/chronoscope-demo.mp4
+Duration: 00:02:07.78 (< 3 min), h264 1920x1080 30 fps, aac 44100 Hz mono
+```
+
+**CI defect found and fixed during publish.** The first push (`26d5b0c`) ran
+red on Linux and Windows even though every test step was green: `actions/setup-
+python@v5` with `cache: pip` failed in its *post-job* step because a
+zero-dependency project never creates `~/.cache/pip` ("Cache folder path is
+retrieved for pip but doesn't exist on disk"). Fixed in `5bfd3cc` by removing
+`cache: pip` / `cache-dependency-path`; the re-run is fully green. This is a
+workflow-only fix — no project code changed.
+
+**One residual warning, non-blocking:** GitHub annotates `actions/checkout@v4`,
+`setup-python@v5` and `upload-artifact@v4` as Node.js 20 actions being forced
+onto Node.js 24. These are upstream action-runtime deprecation notices, not
+failures; all six jobs still complete successfully.
+
+**Net status:** 28 of the 30 compliance-matrix rows are PASS with live evidence;
+row 13 (public YouTube link) and the Devpost form submission are the only
+remaining human-account actions. The repository, licence, codelab, CI, tests,
+reports and demo video are all complete, public and verified.
