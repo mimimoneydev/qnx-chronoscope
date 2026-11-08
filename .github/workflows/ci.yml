@@ -38,11 +38,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # No pip caching: the host-side engine is pure standard library and installs
+      # zero dependencies. With `cache: pip`, setup-python's post-job step fails on
+      # a non-existent ~/.cache/pip ("no dependencies to cache") and marks an
+      # otherwise fully green job as failed.
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-          cache: pip
-          cache-dependency-path: .github/workflows/ci.yml
 
       - name: Self-verification suite
         run: python -m chronoscope verify
